@@ -6,123 +6,129 @@
 #include <string>
 
 #include <boost/asio.hpp>
-
 #include <boost/bind.hpp>
+#include <boost/thread.hpp>
+
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
 namespace sys = boost::system;
 
-struct Client
+struct Task
 {
-    Client(
-        boost::asio::io_service & ioService,
-        std::string const & host,
-        std::string const & port
+    Task(
+        asio::io_service & ioService,
+        ip::tcp::socket & socket
     )
-        : m_socket( ioService )
-        , m_resolver( ioService )
+        : m_ioService( ioService )
+        , m_socket( socket )
     {
-        ip::tcp::resolver::query query( host, port ); 
+    }
 
-        auto const onResolve = boost::bind(
-            & Client::onResolve,
-            this,
-            placeholders::error,
-            placeholders::iterator
+    void run()
+    {
+        auto const threadBody = boost::bind(
+            & asio::io_service::run,
+            & m_ioService
         );
 
-        m_resolver.async_resolve(
-            query,
-            onResolve
-        );
+        boost::thread thread( threadBody );
 
-        ioService.run();
+        runImpl();
+
+        thread.join();
     }
 
-    void onResolve(
-        sys::error_code const & errorCode,
-        ip::tcp::resolver::iterator endpointIterator 
+protected:
+
+    virtual void runImpl() = 0;
+
+protected:
+
+    asio::io_service & m_ioService;
+    ip::tcp::socket & m_socket;
+
+};
+
+struct Writer : Task
+{
+    Writer(
+        asio::io_service & ioService,
+        ip::tcp::socket & socket
     )
+        : Task( ioService, socket )
     {
-        if( errorCode )
-        {
-            std::cerr << "Error: " << errorCode.message() << std::endl;
-        }
-        else
-        {
-            auto const onConnect = boost::bind(
-                & Client::onConnect,
-                this,
-                placeholders::error
-            );
-
-            asio::async_connect(
-                m_socket,
-                endpointIterator,
-                onConnect 
-            );
-        }
     }
 
-    void onConnect(
-        sys::error_code const & errorCode 
-    )
-    {
-        if( errorCode )
-        {
-            std::cerr << "Error: " << errorCode.message() << std::endl;
-        }
-        else
-        {
-            prepareAndSendRequest();
-        }
-    }
+protected:
 
-    void prepareAndSendRequest()
+    void runImpl() override
     {
-        auto const onWrite = boost::bind(
-            & Client::onWriteRequest,
+        auto const onRequestWritten = boost::bind(
+            & Writer::onRequestWritten,
             this,
             placeholders::error
         );
 
-        std::cout << "< ";
-        std::cin.getline( m_request, m_maxLength );
-
-        asio::async_write(
-            m_socket,
-            asio::buffer( m_request, strlen( m_request ) ),
-            onWrite
-        );
+        while( std::cin.getline( m_request, m_maxLength + 1 ) )
+        {
+            asio::async_write(
+                m_socket,
+                asio::buffer( m_request, strlen( m_request ) ),
+                onRequestWritten
+            );
+        }
     }
 
-    void onWriteRequest(
-        sys::error_code const & errorCode 
+private:
+
+    void onRequestWritten(
+        sys::error_code const & errorCode
     )
     {
         if( errorCode )
         {
             std::cerr << "Error: " << errorCode.message() << std::endl;
         }
-        else
-        {
-            auto const onReadResponse = boost::bind(
-                & Client::onReadResponse,
-                this,
-                placeholders::error,
-                placeholders::bytes_transferred
-            );
-
-            m_socket.async_read_some(
-                asio::buffer( m_response, m_maxLength ),
-                onReadResponse
-            );
-        }
     }
 
-    void onReadResponse(
+private:
+
+    enum { m_maxLength = 1024 };
+    char m_request[ m_maxLength ];
+};
+
+struct Reader : Task
+{
+    Reader(
+        asio::io_service & ioService,
+        ip::tcp::socket & socket
+    )
+        : Task( ioService, socket )
+    {
+    }
+
+protected:
+
+    void runImpl() override
+    {
+        auto const onResponseRead = boost::bind(
+            & Reader::onResponseRead,
+            this,
+            placeholders::error,
+            placeholders::bytes_transferred
+        );
+
+        m_socket.async_read_some(
+            asio::buffer( m_response, m_maxLength ),
+            onResponseRead
+        );
+    }
+
+private:
+
+    void onResponseRead(
         sys::error_code const & errorCode,
         size_t const bytesTransferred
     )
@@ -137,17 +143,102 @@ struct Client
             std::cout.write( m_response, bytesTransferred );
             std::cout << std::endl;
 
-            prepareAndSendRequest();
+            auto const onResponseRead = boost::bind(
+                & Reader::onResponseRead,
+                this,
+                placeholders::error,
+                placeholders::bytes_transferred
+            );
+
+            m_socket.async_read_some(
+                asio::buffer( m_response, m_maxLength ),
+                onResponseRead
+            );
         }
     }
 
-    ip::tcp::socket m_socket;
-    ip::tcp::resolver m_resolver;
+private:
 
     enum { m_maxLength = 1024 };
-
-    char m_request[ m_maxLength ];
     char m_response[ m_maxLength ];
+};
+
+struct Client
+{
+    Client(
+        asio::io_service & ioService,
+        std::string const & host,
+        std::string const & port
+    )
+        : m_ioService( ioService )
+        , m_socket( m_ioService )
+        , m_reader( m_ioService, m_socket )
+        , m_writer( m_ioService, m_socket )
+    {
+        ip::tcp::resolver::query query( host, port ); 
+
+        auto const onResolved = boost::bind(
+            & Client::onResolved,
+            this,
+            placeholders::error,
+            placeholders::iterator
+        );
+
+        ip::tcp::resolver resolver( m_ioService );
+        resolver.async_resolve(
+            query,
+            onResolved
+        );
+
+        boost::thread( boost::bind( & Writer::run, m_writer ) ).join();
+    }
+
+private:
+
+    void onResolved(
+        sys::error_code const & errorCode,
+        ip::tcp::resolver::iterator endpointIterator 
+    )
+    {
+        if( errorCode )
+        {
+            std::cerr << "Error: " << errorCode.message() << std::endl;
+        }
+        else
+        {
+            auto const onConnected = boost::bind(
+                & Client::onConnected,
+                this,
+                placeholders::error
+            );
+
+            asio::async_connect(
+                m_socket,
+                endpointIterator,
+                onConnected 
+            );
+        }
+    }
+
+    void onConnected(
+        sys::error_code const & errorCode 
+    )
+    {
+        if( errorCode )
+        {
+            std::cerr << "Error: " << errorCode.message() << std::endl;
+        }
+        else
+        {
+            m_reader.run();
+        }
+    }
+
+    asio::io_service & m_ioService;
+    ip::tcp::socket m_socket;
+
+    Reader m_reader;
+    Writer m_writer;
 };
 
 int main( int argc, char* argv[] )
