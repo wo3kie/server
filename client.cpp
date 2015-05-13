@@ -89,7 +89,7 @@ private:
     {
         if( errorCode )
         {
-            std::cerr << "Error: " << errorCode.message() << std::endl;
+            std::cerr << "Request Write Error: " << errorCode.message() << std::endl;
         }
     }
 
@@ -135,7 +135,7 @@ private:
     {
         if( errorCode )
         {
-            std::cerr << "Error: " << errorCode.message() << std::endl;
+            std::cerr << "Response Read Error: " << errorCode.message() << std::endl;
         }
         else
         {
@@ -143,16 +143,8 @@ private:
             std::cout.write( m_response, bytesTransferred );
             std::cout << std::endl;
 
-            auto const onResponseRead = boost::bind(
-                & Reader::onResponseRead,
-                this,
-                placeholders::error,
-                placeholders::bytes_transferred
-            );
-
-            m_socket.async_read_some(
-                asio::buffer( m_response, m_maxLength ),
-                onResponseRead
+            m_ioService.post(
+                boost::bind( & Reader::runImpl, this )
             );
         }
     }
@@ -202,7 +194,7 @@ private:
     {
         if( errorCode )
         {
-            std::cerr << "Error: " << errorCode.message() << std::endl;
+            std::cerr << "Resolution Error: " << errorCode.message() << std::endl;
         }
         else
         {
@@ -226,7 +218,7 @@ private:
     {
         if( errorCode )
         {
-            std::cerr << "Error: " << errorCode.message() << std::endl;
+            std::cerr << "Connection Error: " << errorCode.message() << std::endl;
         }
         else
         {
@@ -245,8 +237,8 @@ int main( int argc, char* argv[] )
 {
     boost::asio::io_service ioService;
 
-    const auto host = argv[ 1 ];
-    const auto port = argv[ 2 ];
+    const auto host = "127.0.0.1";
+    const auto port = argv[ 1 ];
 
     Client c( ioService, host, port );
 
