@@ -24,6 +24,10 @@ public:
     {
     }
 
+    ~Connection()
+    {
+    }
+
     ip::tcp::socket & socket()
     {
         return m_socket;
@@ -49,20 +53,27 @@ public:
         std::size_t const bytesTransferred
     )
     {
-        std::cout.write( m_request, bytesTransferred );
-        std::cout << std::endl;
+        if( errorCode )
+        {
+            std::cerr << "Response Read Error: " << errorCode.message() << std::endl;
+        }
+        else
+        {
+            std::cout.write( m_request, bytesTransferred );
+            std::cout << std::endl;
 
-        auto const onDataWritten = boost::bind(
-            & Connection::onDataWritten,
-            shared_from_this(),
-            placeholders::error
-        );
+            auto const onDataWritten = boost::bind(
+                & Connection::onDataWritten,
+                shared_from_this(),
+                placeholders::error
+            );
 
-        asio::async_write(
-            m_socket,
-            asio::buffer( m_request, strlen( m_request ) ),
-            onDataWritten
-        );
+            asio::async_write(
+                m_socket,
+                asio::buffer( m_request, strlen( m_request ) ),
+                onDataWritten
+            );
+        }
     }
 
     void onDataWritten(
@@ -92,7 +103,16 @@ public:
         std::string const & port
     )
         : m_acceptor( m_ioService )
+        , m_signals( m_ioService )
     {
+        m_signals.add( SIGINT );
+        m_signals.add( SIGTERM );
+        m_signals.add( SIGQUIT );
+
+        m_signals.async_wait(
+            boost::bind( & Server::onStop, this )
+        );
+
         ip::tcp::resolver resolver( m_ioService );
         ip::tcp::resolver::query query( "127.0.0.1", port );
         ip::tcp::endpoint endpoint = * resolver.resolve( query );
@@ -152,10 +172,16 @@ private:
         startAccept();
     }
 
+    void onStop()
+    {
+        m_ioService.stop();
+    }
+
 private:
 
     asio::io_service m_ioService;
     asio::ip::tcp::acceptor m_acceptor;
+    asio::signal_set m_signals;
 
     boost::shared_ptr< Connection > m_newConnection;
 };
