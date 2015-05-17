@@ -5,7 +5,9 @@
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
+
 #include <boost/thread.hpp>
+#include <boost/thread/locks.hpp>
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
@@ -132,10 +134,23 @@ public:
         return m_connections.end();
     }
 
+    template< typename Function, class... Args >
+    void foreach( Function&& func, Args && ...args )
+    {
+        boost::lock_guard< boost::mutex > lock( m_mutex );
+
+        for( auto & connection : m_connections )
+        {
+            func( connection, std::forward< Args >( args )... );        
+        }
+    }
+
     void add(
         ConnectionPtr & connection
     )
     {
+        boost::lock_guard< boost::mutex > lock( m_mutex );
+
         m_connections.insert( connection ); 
     }
 
@@ -143,6 +158,8 @@ public:
         ConnectionPtr const & connection
     )
     {
+        boost::lock_guard< boost::mutex > lock( m_mutex );
+
         auto const pos = m_connections.find( connection );
 
         if( pos != m_connections.end() ){
@@ -152,6 +169,7 @@ public:
 
 private:
 
+    boost::mutex m_mutex;
     ConnectionsPtr m_connections;
 };
 
@@ -255,10 +273,9 @@ private:
 
     void onStop()
     {
-        for( auto const & connection : m_connectionManager )
-        {
-            connection->onStop();
-        }
+        m_connectionManager.foreach(
+            boost::bind( & Connection::onStop, _1 )
+        );
 
         m_ioService.stop();
     }
