@@ -1,3 +1,4 @@
+#include <set>
 #include <string>
 
 #include <boost/asio.hpp>
@@ -11,16 +12,20 @@ namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
 namespace sys = boost::system;
 
+class ConnectionManager;
+
 class Connection
     : public boost::enable_shared_from_this< Connection >
 {
 public:
     
     Connection( 
-        asio::io_service & ioService
+        asio::io_service & ioService,
+        ConnectionManager & connectionManager
     )
         : m_socket( ioService )
         , m_strand( ioService )
+        , m_connectionManager( connectionManager )
     {
     }
 
@@ -86,19 +91,93 @@ public:
         }
     }
 
+    void onStop();
+
 private:
 
     ip::tcp::socket m_socket;
     asio::io_service::strand m_strand;
+    ConnectionManager & m_connectionManager;
 
     enum { m_maxLength = 1024 };
     char m_request[ m_maxLength ];
 };
+    
+typedef boost::shared_ptr< Connection > ConnectionPtr;
+
+class ConnectionManager
+    : public boost::noncopyable
+{
+    typedef std::set< ConnectionPtr > ConnectionsPtr;
+
+public:
+
+    ConnectionsPtr::const_iterator begin() const
+    {
+        return m_connections.begin();
+    }
+
+    ConnectionsPtr::const_iterator cbegin() const
+    {
+        return m_connections.begin();
+    }
+
+    ConnectionsPtr::const_iterator end() const
+    {
+        return m_connections.end();
+    }
+
+    ConnectionsPtr::const_iterator cend() const
+    {
+        return m_connections.end();
+    }
+
+    void add(
+        ConnectionPtr & connection
+    )
+    {
+        m_connections.insert( connection ); 
+    }
+
+    void remove(
+        ConnectionPtr const & connection
+    )
+    {
+        auto const pos = m_connections.find( connection );
+
+        if( pos != m_connections.end() ){
+            m_connections.erase( pos );
+        }
+    }
+
+private:
+
+    ConnectionsPtr m_connections;
+};
+
+void Connection::onStop()
+{
+    char const * const message = "Goodbye.";
+
+    auto const onDataWritten = boost::bind(
+        & Connection::onDataWritten,
+        shared_from_this(),
+        placeholders::error
+    );
+
+    asio::async_write(
+        m_socket,
+        asio::buffer( message, strlen( message ) ),
+        onDataWritten 
+    );
+
+    m_connectionManager.remove( shared_from_this() );
+}
 
 class Server
 {
 public:
-    
+
     Server(
         std::string const & port
     )
@@ -146,7 +225,9 @@ private:
 
     void startAccept()
     {
-        m_newConnection.reset( new Connection( m_ioService ) );
+        m_newConnection.reset( new Connection( m_ioService, m_connectionManager ) );
+
+        m_connectionManager.add( m_newConnection );
 
         auto const onAccepted = boost::bind(
             & Server::onAccepted,
@@ -174,6 +255,11 @@ private:
 
     void onStop()
     {
+        for( auto const & connection : m_connectionManager )
+        {
+            connection->onStop();
+        }
+
         m_ioService.stop();
     }
 
@@ -183,7 +269,8 @@ private:
     asio::ip::tcp::acceptor m_acceptor;
     asio::signal_set m_signals;
 
-    boost::shared_ptr< Connection > m_newConnection;
+    ConnectionPtr m_newConnection;
+    ConnectionManager m_connectionManager;
 };
 
 int main( int argc, char* argv[] )
