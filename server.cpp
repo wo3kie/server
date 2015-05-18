@@ -20,6 +20,10 @@ class Connection
     : public boost::enable_shared_from_this< Connection >
 {
 public:
+
+    typedef boost::shared_ptr< Connection > ConnectionPtr;
+
+public:
     
     Connection( 
         asio::io_service & ioService,
@@ -69,19 +73,14 @@ public:
             std::cout.write( m_request, bytesTransferred );
             std::cout << std::endl;
 
-            auto const onDataWritten = boost::bind(
-                & Connection::onDataWritten,
-                shared_from_this(),
-                placeholders::error
-            );
-
-            asio::async_write(
-                m_socket,
-                asio::buffer( m_request, strlen( m_request ) ),
-                onDataWritten
-            );
+            broadcast( m_request, bytesTransferred );
         }
     }
+
+    void broadcast(
+        char const * const message,
+        std::size_t const size
+    );
 
     void onDataWritten(
         sys::error_code const & errorCode
@@ -104,9 +103,9 @@ private:
     enum { m_maxLength = 1024 };
     char m_request[ m_maxLength ];
 };
-    
-typedef boost::shared_ptr< Connection > ConnectionPtr;
 
+typedef Connection::ConnectionPtr ConnectionPtr;
+    
 class ConnectionManager
     : public boost::noncopyable
 {
@@ -114,34 +113,28 @@ class ConnectionManager
 
 public:
 
-    ConnectionsPtr::const_iterator begin() const
-    {
-        return m_connections.begin();
-    }
-
-    ConnectionsPtr::const_iterator cbegin() const
-    {
-        return m_connections.begin();
-    }
-
-    ConnectionsPtr::const_iterator end() const
-    {
-        return m_connections.end();
-    }
-
-    ConnectionsPtr::const_iterator cend() const
-    {
-        return m_connections.end();
-    }
-
     template< typename Function, class... Args >
-    void foreach( Function&& func, Args && ...args )
+    void forEach( Function&& func, Args && ...args )
     {
         boost::lock_guard< boost::mutex > lock( m_mutex );
 
         for( auto & connection : m_connections )
         {
             func( connection, std::forward< Args >( args )... );        
+        }
+    }
+
+    template< typename Predicate, typename Function, class... Args >
+    void forEachIf( Predicate && predicate, Function && func, Args && ...args )
+    {
+        boost::lock_guard< boost::mutex > lock( m_mutex );
+
+        for( auto & connection : m_connections )
+        {
+            if( predicate( connection ) )
+            {
+                func( connection, std::forward< Args >( args )... );        
+            }
         }
     }
 
@@ -188,8 +181,34 @@ void Connection::onStop()
         asio::buffer( message, strlen( message ) ),
         onDataWritten 
     );
+}
 
-    m_connectionManager.remove( shared_from_this() );
+void Connection::broadcast(
+    char const * const message,
+    std::size_t const size
+)
+{
+    auto const skipSender = [ this ]( ConnectionPtr const & connectionPtr )
+    {
+        return connectionPtr->socket().native_handle() != this->socket().native_handle();
+    };
+
+    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
+    {
+        auto const onDataWritten = boost::bind(
+            & Connection::onDataWritten,
+            shared_from_this(),
+            placeholders::error
+        );
+
+        asio::async_write(
+            connectionPtr->socket(),
+            asio::buffer( message, size ),
+            onDataWritten
+        );
+    };
+
+    m_connectionManager.forEachIf( skipSender, sendMessage );
 }
 
 class Server
@@ -273,7 +292,7 @@ private:
 
     void onStop()
     {
-        m_connectionManager.foreach(
+        m_connectionManager.forEach(
             boost::bind( & Connection::onStop, _1 )
         );
 
