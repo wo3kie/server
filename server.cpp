@@ -5,6 +5,7 @@
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/logic/tribool.hpp>
 
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
@@ -59,6 +60,34 @@ public:
         );
     }
 
+    void processRequest(
+        std::size_t const bytesTransferred
+    )
+    {
+        broadcast( m_request, bytesTransferred );
+    }
+
+    void processParseError(
+        std::size_t const bytesTransferred
+    )
+    {
+        std::cerr
+            << "Parse error: "
+            << std::string( m_request, bytesTransferred )
+            << std::endl;
+    }
+
+    boost::tribool parse(
+        char const * const begin,
+        char const * const end
+    )
+    {
+        std::cout.write( begin, end - begin );
+        std::cout << std::endl;
+
+        return true;
+    }
+
     void onDataRead(
         sys::error_code const & errorCode,
         std::size_t const bytesTransferred
@@ -70,10 +99,30 @@ public:
         }
         else
         {
-            std::cout.write( m_request, bytesTransferred );
-            std::cout << std::endl;
+            auto const result = parse( m_request, m_request + bytesTransferred );
 
-            broadcast( m_request, bytesTransferred );
+            if( result )
+            {
+                processRequest( bytesTransferred );
+            }
+            else if( ! result )
+            {
+                processParseError( bytesTransferred );
+            }
+            else
+            {
+                auto const onDataRead = boost::bind(
+                    & Connection::onDataRead,
+                    shared_from_this(),
+                    placeholders::error,
+                    placeholders::bytes_transferred()
+                );
+
+                m_socket.async_read_some(
+                    asio::buffer( m_request, m_maxLength ),
+                    m_strand.wrap( onDataRead )
+                );
+            }
         }
     }
 
