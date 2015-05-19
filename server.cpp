@@ -1,11 +1,13 @@
 #include <set>
+#include <sstream>
 #include <string>
 
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/logic/tribool.hpp>
 
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
@@ -14,6 +16,7 @@ namespace asio = boost::asio;
 namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
 namespace sys = boost::system;
+namespace algorithm = boost::algorithm;
 
 class ConnectionManager;
 
@@ -25,7 +28,14 @@ public:
     typedef boost::shared_ptr< Connection > ConnectionPtr;
 
 public:
-    
+
+    enum class Action
+    {
+        ReadCompleted,
+        ReadError,
+        ReadSome
+    };
+
     Connection( 
         asio::io_service & ioService,
         ConnectionManager & connectionManager
@@ -45,26 +55,56 @@ public:
         return m_socket;
     }
 
-    void start()
+    void start(
+        Action const action = Action::ReadSome
+    )
     {
-        auto const onDataRead = boost::bind(
-            & Connection::onDataRead,
+        auto const read = boost::bind(
+            & Connection::read,
             shared_from_this(),
             placeholders::error,
             placeholders::bytes_transferred()
         );
 
-        m_socket.async_read_some(
-            asio::buffer( m_request, m_maxLength ),
-            m_strand.wrap( onDataRead )
-        );
+        switch( action )
+        {
+            case Action::ReadCompleted:
+            {
+                process( 0 );
+                
+                break;
+            }
+
+            case Action::ReadError:
+            {
+                break;
+            }
+
+            case Action::ReadSome:
+            {
+                auto const read = boost::bind(
+                    & Connection::read,
+                    shared_from_this(),
+                    placeholders::error,
+                    placeholders::bytes_transferred()
+                );
+
+                m_socket.async_read_some(
+                    asio::buffer( m_buffer, m_maxLength ),
+                    m_strand.wrap( read )
+                );
+
+                break;
+            }
+        }
     }
 
-    void processRequest(
-        std::size_t const bytesTransferred
+    Action parse(
+        char const * const begin,
+        char const * const end
     )
     {
-        broadcast( m_request, bytesTransferred );
+        return Action::ReadCompleted;
     }
 
     void processParseError(
@@ -73,22 +113,91 @@ public:
     {
         std::cerr
             << "Parse error: "
-            << std::string( m_request, bytesTransferred )
+            << std::string( m_buffer, bytesTransferred )
             << std::endl;
     }
 
-    boost::tribool parse(
-        char const * const begin,
-        char const * const end
+    void process(
+        std::size_t const bytesTransferred
     )
     {
-        std::cout.write( begin, end - begin );
-        std::cout << std::endl;
+        std::string text( m_buffer, bytesTransferred );
 
-        return true;
+        if( text[0] == 'g' )
+        {
+            std::vector< std::string > tokens;
+            algorithm::split( tokens, text, algorithm::is_any_of( " " ) );
+
+            setId( tokens[1] );
+            response( "Hello.", strlen( "Hello." ) );
+        }
+        else if( text[0] == 'b' )
+        {
+            broadcastAndStartAgain( text.c_str(), text.size() );
+        }
+        else if( text[0] == 'u' )
+        {
+            std::vector< std::string > tokens;
+            algorithm::split( tokens, text, algorithm::is_any_of( " " ) );
+
+            unicastAndStartAgain( tokens[1], tokens[2].c_str(), tokens[2].size() );
+        }
+        else
+        {
+            std::cout << "unknown" << std::endl;
+
+            start();
+        }
     }
 
-    void onDataRead(
+    void broadcastAndStartAgain(
+        char const * const message,
+        std::size_t const size
+    );
+
+    void broadcastAndStop(
+        char const * const message,
+        std::size_t const size
+    );
+
+    void greetAndStartAgain(
+        std::string const & id
+    );
+
+    void unicastAndStartAgain(
+        std::string const & receiverId,
+        char const * const message,
+        std::size_t const size
+    );
+
+    void unicastAndStop(
+        std::string const & receiverId,
+        char const * const message,
+        std::size_t const size
+    );
+
+    void response(
+        char const * const message,
+        std::size_t const size
+    );
+
+    void onStop();
+
+    void setId(
+        std::string const & id
+    )
+    {
+        m_id = id;
+    }
+
+    std::string const & getId() const 
+    {
+        return m_id;
+    }
+
+private:
+
+    void read(
         sys::error_code const & errorCode,
         std::size_t const bytesTransferred
     )
@@ -99,39 +208,45 @@ public:
         }
         else
         {
-            auto const result = parse( m_request, m_request + bytesTransferred );
+            auto const result = parse( m_buffer, m_buffer + bytesTransferred );
 
-            if( result )
+            switch( result )
             {
-                processRequest( bytesTransferred );
-            }
-            else if( ! result )
-            {
-                processParseError( bytesTransferred );
-            }
-            else
-            {
-                auto const onDataRead = boost::bind(
-                    & Connection::onDataRead,
-                    shared_from_this(),
-                    placeholders::error,
-                    placeholders::bytes_transferred()
-                );
+                case Action::ReadCompleted:
+                {
+                    process( bytesTransferred );
+                    
+                    break;
+                }
 
-                m_socket.async_read_some(
-                    asio::buffer( m_request, m_maxLength ),
-                    m_strand.wrap( onDataRead )
-                );
+                case Action::ReadError:
+                {
+                    processParseError( bytesTransferred );
+
+                    break;
+                }
+
+                case Action::ReadSome:
+                {
+                    auto const read = boost::bind(
+                        & Connection::read,
+                        shared_from_this(),
+                        placeholders::error,
+                        placeholders::bytes_transferred()
+                    );
+
+                    m_socket.async_read_some(
+                        asio::buffer( m_buffer, m_maxLength ),
+                        m_strand.wrap( read )
+                    );
+
+                    break;
+                }
             }
         }
     }
 
-    void broadcast(
-        char const * const message,
-        std::size_t const size
-    );
-
-    void onDataWritten(
+    void startAgain(
         sys::error_code const & errorCode
     )
     {
@@ -141,16 +256,21 @@ public:
         }
     }
 
-    void onStop();
+    void stop(
+        sys::error_code const & errorCode
+    )
+    {
+    }
 
 private:
 
     ip::tcp::socket m_socket;
     asio::io_service::strand m_strand;
     ConnectionManager & m_connectionManager;
+    std::string m_id;
 
     enum { m_maxLength = 1024 };
-    char m_request[ m_maxLength ];
+    char m_buffer[ m_maxLength ];
 };
 
 typedef Connection::ConnectionPtr ConnectionPtr;
@@ -219,20 +339,28 @@ void Connection::onStop()
 {
     char const * const message = "Goodbye.";
 
-    auto const onDataWritten = boost::bind(
-        & Connection::onDataWritten,
+    response( message, strlen( message ) );
+}
+
+void Connection::response(
+    char const * const message,
+    std::size_t const size
+)
+{
+    auto const startAgain = boost::bind(
+        & Connection::startAgain,
         shared_from_this(),
         placeholders::error
     );
 
     asio::async_write(
         m_socket,
-        asio::buffer( message, strlen( message ) ),
-        onDataWritten 
+        asio::buffer( message, size ),
+        startAgain 
     );
 }
 
-void Connection::broadcast(
+void Connection::broadcastAndStop(
     char const * const message,
     std::size_t const size
 )
@@ -244,8 +372,8 @@ void Connection::broadcast(
 
     auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
-        auto const onDataWritten = boost::bind(
-            & Connection::onDataWritten,
+        auto const stop = boost::bind(
+            & Connection::stop,
             shared_from_this(),
             placeholders::error
         );
@@ -253,11 +381,112 @@ void Connection::broadcast(
         asio::async_write(
             connectionPtr->socket(),
             asio::buffer( message, size ),
-            onDataWritten
+            stop
         );
     };
 
     m_connectionManager.forEachIf( skipSender, sendMessage );
+}
+
+void Connection::broadcastAndStartAgain(
+    char const * const message,
+    std::size_t const size
+)
+{
+    auto const skipSender = [ this ]( ConnectionPtr const & connectionPtr )
+    {
+        return connectionPtr->socket().native_handle() != this->socket().native_handle();
+    };
+
+    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
+    {
+        auto const startAgain = boost::bind(
+            & Connection::startAgain,
+            shared_from_this(),
+            placeholders::error
+        );
+
+        asio::async_write(
+            connectionPtr->socket(),
+            asio::buffer( message, size ),
+            startAgain
+        );
+    };
+
+    m_connectionManager.forEachIf( skipSender, sendMessage );
+}
+
+void Connection::unicastAndStop(
+    std::string const & receiverId,
+    char const * const message,
+    std::size_t const size
+)
+{
+    auto const matchReceiver = [ this, & receiverId ]( ConnectionPtr const & connectionPtr )
+    {
+        return connectionPtr->getId() == receiverId;
+    };
+
+    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
+    {
+        auto const stop = boost::bind(
+            & Connection::stop,
+            shared_from_this(),
+            placeholders::error
+        );
+
+        asio::async_write(
+            connectionPtr->socket(),
+            asio::buffer( message, size ),
+            stop
+        );
+    };
+
+    m_connectionManager.forEachIf( matchReceiver, sendMessage );
+}
+
+void Connection::unicastAndStartAgain(
+    std::string const & receiverId,
+    char const * const message,
+    std::size_t const size
+)
+{
+    auto const matchReceiver = [ this, & receiverId ]( ConnectionPtr const & connectionPtr )
+    {
+        return connectionPtr->getId() == receiverId;
+    };
+
+    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
+    {
+        auto const startAgain = boost::bind(
+            & Connection::startAgain,
+            shared_from_this(),
+            placeholders::error
+        );
+
+        asio::async_write(
+            connectionPtr->socket(),
+            asio::buffer( message, size ),
+            startAgain
+        );
+    };
+
+    m_connectionManager.forEachIf( matchReceiver, sendMessage );
+}
+
+void Connection::greetAndStartAgain(
+    std::string const & name
+)
+{
+    setId( name );
+
+    auto const startAgain = boost::bind(
+        & Connection::startAgain,
+        shared_from_this(),
+        placeholders::error
+    );
+
+    start();
 }
 
 class Server
