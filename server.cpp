@@ -43,6 +43,7 @@ public:
         : m_socket( ioService )
         , m_strand( ioService )
         , m_connectionManager( connectionManager )
+        , m_size( 0 )
     {
     }
 
@@ -53,6 +54,18 @@ public:
     ip::tcp::socket & socket()
     {
         return m_socket;
+    }
+
+    void setId(
+        std::string const & id
+    )
+    {
+        m_id = id;
+    }
+
+    std::string const & getId() const 
+    {
+        return m_id;
     }
 
     void start(
@@ -70,7 +83,7 @@ public:
         {
             case Action::ReadCompleted:
             {
-                process( 0 );
+                process( sys::error_code() );
                 
                 break;
             }
@@ -99,29 +112,36 @@ public:
         }
     }
 
+    void onStop();
+
+public: // reading
+
     Action parse(
-        char const * const begin,
-        char const * const end
+        char const * const message,
+        std::size_t const size
     )
     {
+        m_size = size;
+
         return Action::ReadCompleted;
     }
 
     void processParseError(
-        std::size_t const bytesTransferred
+        sys::error_code const & errorCode
     )
     {
         std::cerr
-            << "Parse error: "
-            << std::string( m_buffer, bytesTransferred )
+            << "Parse error"
             << std::endl;
     }
 
+public: // processing
+
     void process(
-        std::size_t const bytesTransferred
+        sys::error_code const & errorCode
     )
     {
-        std::string text( m_buffer, bytesTransferred );
+        std::string text( m_buffer, m_size );
 
         if( text[0] == 'g' )
         {
@@ -129,18 +149,20 @@ public:
             algorithm::split( tokens, text, algorithm::is_any_of( " " ) );
 
             setId( tokens[1] );
-            response( "Hello.", strlen( "Hello." ) );
+
+            char const * const text = "Hello.";
+            responseAndRead( text, strlen( text ) );
         }
         else if( text[0] == 'b' )
         {
-            broadcastAndStartAgain( text.c_str(), text.size() );
+            broadcastAndRead( text.c_str(), text.size() );
         }
         else if( text[0] == 'u' )
         {
             std::vector< std::string > tokens;
             algorithm::split( tokens, text, algorithm::is_any_of( " " ) );
 
-            unicastAndStartAgain( tokens[1], tokens[2].c_str(), tokens[2].size() );
+            unicastAndRead( tokens[1], tokens[2].c_str(), tokens[2].size() );
         }
         else
         {
@@ -150,7 +172,14 @@ public:
         }
     }
 
-    void broadcastAndStartAgain(
+public: // writing
+
+    void broadcastAndRead(
+        char const * const message,
+        std::size_t const size
+    );
+
+    void broadcastAndProcess(
         char const * const message,
         std::size_t const size
     );
@@ -160,11 +189,7 @@ public:
         std::size_t const size
     );
 
-    void greetAndStartAgain(
-        std::string const & id
-    );
-
-    void unicastAndStartAgain(
+    void unicastAndRead(
         std::string const & receiverId,
         char const * const message,
         std::size_t const size
@@ -176,26 +201,50 @@ public:
         std::size_t const size
     );
 
-    void response(
+    void unicastAndProcess(
+        std::string const & receiverId,
         char const * const message,
         std::size_t const size
     );
 
-    void onStop();
+    void responseAndRead(
+        char const * const message,
+        std::size_t const size
+    );
 
-    void setId(
-        std::string const & id
-    )
-    {
-        m_id = id;
-    }
+    void responseAndProcess(
+        char const * const message,
+        std::size_t const size
+    );
 
-    std::string const & getId() const 
-    {
-        return m_id;
-    }
+    void responseAndStop(
+        char const * const message,
+        std::size_t const size
+    );
 
 private:
+
+    template< typename MemberPtr >
+    void broadcastImpl(
+        MemberPtr && memberPtr,
+        char const * const message,
+        std::size_t const size
+    );
+
+    template< typename MemberPtr >
+    void unicastImpl(
+        MemberPtr && memberPtr,
+        std::string const & receiverId,
+        char const * const message,
+        std::size_t const size
+    );
+
+    template< typename MemberPtr >
+    void responseImpl(
+        MemberPtr && memberPtr,
+        char const * const message,
+        std::size_t const size
+    );
 
     void read(
         sys::error_code const & errorCode,
@@ -208,20 +257,20 @@ private:
         }
         else
         {
-            auto const result = parse( m_buffer, m_buffer + bytesTransferred );
+            auto const result = parse( m_buffer, bytesTransferred );
 
             switch( result )
             {
                 case Action::ReadCompleted:
                 {
-                    process( bytesTransferred );
+                    process( sys::error_code() );
                     
                     break;
                 }
 
                 case Action::ReadError:
                 {
-                    processParseError( bytesTransferred );
+                    processParseError( sys::error_code() );
 
                     break;
                 }
@@ -270,6 +319,8 @@ private:
     std::string m_id;
 
     enum { m_maxLength = 1024 };
+
+    std::size_t m_size;
     char m_buffer[ m_maxLength ];
 };
 
@@ -339,16 +390,18 @@ void Connection::onStop()
 {
     char const * const message = "Goodbye.";
 
-    response( message, strlen( message ) );
+    responseAndStop( message, strlen( message ) );
 }
 
-void Connection::response(
+template< typename MemberPtr >
+void Connection::responseImpl(
+    MemberPtr && memberPtr,
     char const * const message,
     std::size_t const size
 )
 {
-    auto const startAgain = boost::bind(
-        & Connection::startAgain,
+    auto const continuation = boost::bind(
+        std::forward< MemberPtr >( memberPtr ),
         shared_from_this(),
         placeholders::error
     );
@@ -356,11 +409,37 @@ void Connection::response(
     asio::async_write(
         m_socket,
         asio::buffer( message, size ),
-        startAgain 
+        continuation
     );
 }
 
-void Connection::broadcastAndStop(
+void Connection::responseAndRead(
+    char const * const message,
+    std::size_t const size
+)
+{
+    responseImpl( & Connection::startAgain, message, size );
+}
+
+void Connection::responseAndProcess(
+    char const * const message,
+    std::size_t const size
+)
+{
+    responseImpl( & Connection::process, message, size );
+}
+
+void Connection::responseAndStop(
+    char const * const message,
+    std::size_t const size
+)
+{
+    responseImpl( & Connection::stop, message, size );
+}
+
+template< typename MemberPtr >
+void Connection::broadcastImpl(
+    MemberPtr && memberPtr,
     char const * const message,
     std::size_t const size
 )
@@ -370,10 +449,65 @@ void Connection::broadcastAndStop(
         return connectionPtr->socket().native_handle() != this->socket().native_handle();
     };
 
-    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
+    auto sendMessage = [ this, & size, & message, & memberPtr ]( ConnectionPtr const & connectionPtr )
+    {
+        auto const continuation = boost::bind(
+            std::forward< MemberPtr >( memberPtr ),
+            shared_from_this(),
+            placeholders::error
+        );
+
+        asio::async_write(
+            connectionPtr->socket(),
+            asio::buffer( message, size ),
+            continuation
+        );
+    };
+
+    m_connectionManager.forEachIf( skipSender, sendMessage );
+}
+
+void Connection::broadcastAndStop(
+    char const * const message,
+    std::size_t const size
+)
+{
+    broadcastImpl( & Connection::stop, message, size );
+}
+
+void Connection::broadcastAndRead(
+    char const * const message,
+    std::size_t const size
+)
+{
+    broadcastImpl( & Connection::startAgain, message, size );
+}
+
+void Connection::broadcastAndProcess(
+    char const * const message,
+    std::size_t const size
+)
+{
+    broadcastImpl( & Connection::process, message, size );
+}
+
+template< typename MemberPtr >
+void Connection::unicastImpl(
+    MemberPtr && memberPtr,
+    std::string const & receiverId,
+    char const * const message,
+    std::size_t const size
+)
+{
+    auto const matchReceiver = [ this, & receiverId ]( ConnectionPtr const & connectionPtr )
+    {
+        return connectionPtr->getId() == receiverId;
+    };
+
+    auto sendMessage = [ this, & size, & message, & memberPtr ]( ConnectionPtr const & connectionPtr )
     {
         auto const stop = boost::bind(
-            & Connection::stop,
+            std::forward< MemberPtr >( memberPtr ),
             shared_from_this(),
             placeholders::error
         );
@@ -385,35 +519,7 @@ void Connection::broadcastAndStop(
         );
     };
 
-    m_connectionManager.forEachIf( skipSender, sendMessage );
-}
-
-void Connection::broadcastAndStartAgain(
-    char const * const message,
-    std::size_t const size
-)
-{
-    auto const skipSender = [ this ]( ConnectionPtr const & connectionPtr )
-    {
-        return connectionPtr->socket().native_handle() != this->socket().native_handle();
-    };
-
-    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
-    {
-        auto const startAgain = boost::bind(
-            & Connection::startAgain,
-            shared_from_this(),
-            placeholders::error
-        );
-
-        asio::async_write(
-            connectionPtr->socket(),
-            asio::buffer( message, size ),
-            startAgain
-        );
-    };
-
-    m_connectionManager.forEachIf( skipSender, sendMessage );
+    m_connectionManager.forEachIf( matchReceiver, sendMessage );
 }
 
 void Connection::unicastAndStop(
@@ -422,71 +528,25 @@ void Connection::unicastAndStop(
     std::size_t const size
 )
 {
-    auto const matchReceiver = [ this, & receiverId ]( ConnectionPtr const & connectionPtr )
-    {
-        return connectionPtr->getId() == receiverId;
-    };
-
-    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
-    {
-        auto const stop = boost::bind(
-            & Connection::stop,
-            shared_from_this(),
-            placeholders::error
-        );
-
-        asio::async_write(
-            connectionPtr->socket(),
-            asio::buffer( message, size ),
-            stop
-        );
-    };
-
-    m_connectionManager.forEachIf( matchReceiver, sendMessage );
+    unicastImpl( & Connection::stop, receiverId, message, size );
 }
 
-void Connection::unicastAndStartAgain(
+void Connection::unicastAndProcess(
     std::string const & receiverId,
     char const * const message,
     std::size_t const size
 )
 {
-    auto const matchReceiver = [ this, & receiverId ]( ConnectionPtr const & connectionPtr )
-    {
-        return connectionPtr->getId() == receiverId;
-    };
-
-    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
-    {
-        auto const startAgain = boost::bind(
-            & Connection::startAgain,
-            shared_from_this(),
-            placeholders::error
-        );
-
-        asio::async_write(
-            connectionPtr->socket(),
-            asio::buffer( message, size ),
-            startAgain
-        );
-    };
-
-    m_connectionManager.forEachIf( matchReceiver, sendMessage );
+    unicastImpl( & Connection::process, receiverId, message, size );
 }
 
-void Connection::greetAndStartAgain(
-    std::string const & name
+void Connection::unicastAndRead(
+    std::string const & receiverId,
+    char const * const message,
+    std::size_t const size
 )
 {
-    setId( name );
-
-    auto const startAgain = boost::bind(
-        & Connection::startAgain,
-        shared_from_this(),
-        placeholders::error
-    );
-
-    start();
+    unicastImpl( & Connection::startAgain, receiverId, message, size );
 }
 
 class Server
