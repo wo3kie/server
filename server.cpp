@@ -33,6 +33,7 @@ public:
     {
         ReadCompleted,
         ReadError,
+        ReadLine,
         ReadSome
     };
 
@@ -69,16 +70,9 @@ public:
     }
 
     void start(
-        Action const action = Action::ReadSome
+        Action const action = Action::ReadLine
     )
     {
-        auto const read = boost::bind(
-            & Connection::read,
-            shared_from_this(),
-            placeholders::error,
-            placeholders::bytes_transferred()
-        );
-
         switch( action )
         {
             case Action::ReadCompleted:
@@ -93,18 +87,39 @@ public:
                 break;
             }
 
-            case Action::ReadSome:
+            case Action::ReadLine:
             {
-                auto const read = boost::bind(
-                    & Connection::read,
+                auto const readLine = boost::bind(
+                    & Connection::readLine,
                     shared_from_this(),
                     placeholders::error,
                     placeholders::bytes_transferred()
                 );
 
-                m_socket.async_read_some(
-                    asio::buffer( m_buffer, m_maxLength ),
-                    m_strand.wrap( read )
+                asio::async_read_until(
+                    m_socket,
+                    m_buffer,
+                    "\r\n",
+                    m_strand.wrap( readLine )
+                );
+
+                break;
+            }
+
+            case Action::ReadSome:
+            {
+                auto const ReadSome = boost::bind(
+                    & Connection::ReadSome,
+                    shared_from_this(),
+                    placeholders::error,
+                    placeholders::bytes_transferred()
+                );
+
+                asio::async_read(
+                    m_socket,
+                    m_buffer,
+                    asio::transfer_at_least( 1 ),
+                    m_strand.wrap( ReadSome )
                 );
 
                 break;
@@ -116,13 +131,13 @@ public:
 
 public: // reading
 
-    Action parse(
-        char const * const message,
-        std::size_t const size
-    )
+    Action parseLine()
     {
-        m_size = size;
+        return Action::ReadCompleted;
+    }
 
+    Action parseSome()
+    {
         return Action::ReadCompleted;
     }
 
@@ -141,28 +156,34 @@ public: // processing
         sys::error_code const & errorCode
     )
     {
-        std::string text( m_buffer, m_size );
+        std::istream iss( & m_buffer );
 
-        if( text[0] == 'g' )
+        char command, cr, lf;
+        iss >> command;
+
+        if( command == 'g' )
         {
-            std::vector< std::string > tokens;
-            algorithm::split( tokens, text, algorithm::is_any_of( " " ) );
+            std::string id;
+            iss >> id >> cr >> lf;
+            setId( id );
 
-            setId( tokens[1] );
-
-            char const * const text = "Hello.";
-            responseAndRead( text, strlen( text ) );
+            char const * const line = "Hello.";
+            responseAndRead( line, strlen( line ) );
         }
-        else if( text[0] == 'b' )
+        else if( command == 'b' )
         {
-            broadcastAndRead( text.c_str(), text.size() );
-        }
-        else if( text[0] == 'u' )
-        {
-            std::vector< std::string > tokens;
-            algorithm::split( tokens, text, algorithm::is_any_of( " " ) );
+            std::string message;
+            iss >> message >> cr >> lf;
 
-            unicastAndRead( tokens[1], tokens[2].c_str(), tokens[2].size() );
+            broadcastAndRead( message.c_str(), message.size() );
+        }
+        else if( command == 'u' )
+        {
+            std::string id;
+            std::string message;
+            iss >> id >> message >> cr >> lf;
+
+            unicastAndRead( id, message.c_str(), message.size() );
         }
         else
         {
@@ -246,7 +267,7 @@ private:
         std::size_t const size
     );
 
-    void read(
+    void readLine(
         sys::error_code const & errorCode,
         std::size_t const bytesTransferred
     )
@@ -257,41 +278,22 @@ private:
         }
         else
         {
-            auto const result = parse( m_buffer, bytesTransferred );
+            start( parseLine() );
+        }
+    }
 
-            switch( result )
-            {
-                case Action::ReadCompleted:
-                {
-                    process( sys::error_code() );
-                    
-                    break;
-                }
-
-                case Action::ReadError:
-                {
-                    processParseError( sys::error_code() );
-
-                    break;
-                }
-
-                case Action::ReadSome:
-                {
-                    auto const read = boost::bind(
-                        & Connection::read,
-                        shared_from_this(),
-                        placeholders::error,
-                        placeholders::bytes_transferred()
-                    );
-
-                    m_socket.async_read_some(
-                        asio::buffer( m_buffer, m_maxLength ),
-                        m_strand.wrap( read )
-                    );
-
-                    break;
-                }
-            }
+    void ReadSome(
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
+    )
+    {
+        if( errorCode )
+        {
+            std::cerr << "Response Read Error: " << errorCode.message() << std::endl;
+        }
+        else
+        {
+            start( parseSome() );
         }
     }
 
@@ -318,10 +320,8 @@ private:
     ConnectionManager & m_connectionManager;
     std::string m_id;
 
-    enum { m_maxLength = 1024 };
-
     std::size_t m_size;
-    char m_buffer[ m_maxLength ];
+    asio::streambuf m_buffer;
 };
 
 typedef Connection::ConnectionPtr ConnectionPtr;

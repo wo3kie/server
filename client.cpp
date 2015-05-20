@@ -71,11 +71,15 @@ protected:
             placeholders::error
         );
 
-        while( std::cin.getline( m_request, m_maxLength + 1 ) )
+        while( std::cin.getline( m_request, m_maxLength - 2 ) )
         {
+            std::size_t const size = strlen( m_request );
+            m_request[ size + 0 ] = '\r';
+            m_request[ size + 1 ] = '\n';
+
             asio::async_write(
                 m_socket,
-                asio::buffer( m_request, strlen( m_request ) ),
+                asio::buffer( m_request, size + 2 ),
                 onRequestWritten
             );
         }
@@ -95,7 +99,7 @@ private:
 
 private:
 
-    enum { m_maxLength = 1024 };
+    enum { m_maxLength = 1024 + 2 };
     char m_request[ m_maxLength ];
 };
 
