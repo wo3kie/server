@@ -18,6 +18,84 @@ namespace placeholders = asio::placeholders;
 namespace sys = boost::system;
 namespace algorithm = boost::algorithm;
 
+template< typename TConnection >
+class Task
+{
+public:
+    Task( TConnection * connection )
+        : m_connection( connection )
+    {
+    }
+
+    typename TConnection::Action parseLine(
+        asio::streambuf & buffer
+    )
+    {
+        return TConnection::Action::ReadCompleted;
+    }
+
+    typename TConnection::Action parseSome(
+        asio::streambuf & buffer
+    )
+    {
+        return TConnection::Action::ReadCompleted;
+    }
+
+    void parseError(
+        sys::error_code const & errorCode
+    )
+    {
+        std::cerr
+            << "Parse error"
+            << std::endl;
+    }
+
+    void process(
+        asio::streambuf & buffer,
+        sys::error_code const & errorCode
+    )
+    {
+        std::istream iss( & buffer );
+
+        char command, cr, lf;
+        iss >> command;
+
+        if( command == 'g' )
+        {
+            std::string id;
+            iss >> id >> cr >> lf;
+            m_connection->setId( id );
+
+            char const * const line = "Hello.";
+            m_connection->responseAndRead( line, strlen( line ) );
+        }
+        else if( command == 'b' )
+        {
+            std::string message;
+            iss >> message >> cr >> lf;
+
+            m_connection->broadcastAndRead( message.c_str(), message.size() );
+        }
+        else if( command == 'u' )
+        {
+            std::string id;
+            std::string message;
+            iss >> id >> message >> cr >> lf;
+
+            m_connection->unicastAndRead( id, message.c_str(), message.size() );
+        }
+        else
+        {
+            std::cout << "unknown" << std::endl;
+
+            m_connection->start();
+        }
+    }
+
+private:
+    TConnection * m_connection;
+};
+
 class ConnectionManager;
 
 class Connection
@@ -44,35 +122,31 @@ public:
 
     ip::tcp::socket & socket();
 
+    void onStop();
+
+    void start(
+        Action const action = Action::ReadLine
+    );
+
+public: // api
+
     void setId(
         std::string const & id
     );
 
     std::string const & getId() const ;
 
-    void start(
-        Action const action = Action::ReadLine
-    );
-
-    void onStop();
-
-public: // reading
-
     Action parseLine();
 
     Action parseSome();
 
-    void processParseError(
+    void parseError(
         sys::error_code const & errorCode
     );
-
-public: // processing
 
     void process(
         sys::error_code const & errorCode
     );
-
-public: // writing
 
     void broadcastAndRead(
         char const * const message,
@@ -169,9 +243,11 @@ private:
     ip::tcp::socket m_socket;
     asio::io_service::strand m_strand;
     ConnectionManager & m_connectionManager;
+
+    Task< Connection > m_task;
+
     std::string m_id;
 
-    std::size_t m_size;
     asio::streambuf m_buffer;
 };
 
@@ -183,7 +259,7 @@ Connection::Connection(
     : m_socket( ioService )
     , m_strand( ioService )
     , m_connectionManager( connectionManager )
-    , m_size( 0 )
+    , m_task( this )
 {
 }
 
@@ -264,62 +340,26 @@ void Connection::start(
 
 Connection::Action Connection::parseLine()
 {
-    return Action::ReadCompleted;
+    return m_task.parseLine( m_buffer );
 }
 
 Connection::Action Connection::parseSome()
 {
-    return Action::ReadCompleted;
+    return m_task.parseLine( m_buffer );
 }
 
-void Connection::processParseError(
+void Connection::parseError(
     sys::error_code const & errorCode
 )
 {
-    std::cerr
-        << "Parse error"
-        << std::endl;
+    m_task.parseError( errorCode );
 }
 
 void Connection::process(
     sys::error_code const & errorCode
 )
 {
-    std::istream iss( & m_buffer );
-
-    char command, cr, lf;
-    iss >> command;
-
-    if( command == 'g' )
-    {
-        std::string id;
-        iss >> id >> cr >> lf;
-        setId( id );
-
-        char const * const line = "Hello.";
-        responseAndRead( line, strlen( line ) );
-    }
-    else if( command == 'b' )
-    {
-        std::string message;
-        iss >> message >> cr >> lf;
-
-        broadcastAndRead( message.c_str(), message.size() );
-    }
-    else if( command == 'u' )
-    {
-        std::string id;
-        std::string message;
-        iss >> id >> message >> cr >> lf;
-
-        unicastAndRead( id, message.c_str(), message.size() );
-    }
-    else
-    {
-        std::cout << "unknown" << std::endl;
-
-        start();
-    }
+    m_task.process( m_buffer, errorCode );
 }
 
 void Connection::readLine(
