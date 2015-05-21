@@ -27,6 +27,11 @@ public:
     {
     }
 
+    static typename TConnection::Action start()
+    {
+        return TConnection::Action::ReadLine;
+    }
+
     typename TConnection::Action parseLine(
         asio::streambuf & buffer
     )
@@ -125,7 +130,7 @@ public:
     void onStop();
 
     void start(
-        Action const action = Action::ReadLine
+        Action const action = Task< Connection >::start()
     );
 
 public: // api
@@ -396,7 +401,11 @@ void Connection::startAgain(
     sys::error_code const & errorCode
 )
 {
-    if( ! errorCode )
+    if( errorCode )
+    {
+        std::cerr << "Start Again Error: " << errorCode.message() << std::endl;
+    }
+    else
     {
         start();
     }
