@@ -27,7 +27,7 @@ public:
     {
     }
 
-    static typename TConnection::Action start()
+    typename TConnection::Action start()
     {
         return TConnection::Action::ReadLine;
     }
@@ -47,7 +47,8 @@ public:
     }
 
     void parseError(
-        sys::error_code const & errorCode
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
     )
     {
         std::cerr
@@ -140,14 +141,15 @@ public: // api
         std::string const & id
     );
 
-    std::string const & getId() const ;
+    std::string const & getId() const;
 
     Action parseLine();
 
     Action parseSome();
 
     void parseError(
-        sys::error_code const & errorCode
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
     );
 
     void process(
@@ -314,6 +316,8 @@ void Connection::start(
 
         case Action::ReadError:
         {
+            parseError( sys::error_code(), 0 );
+
             break;
         }
 
@@ -368,10 +372,11 @@ Connection::Action Connection::parseSome()
 }
 
 void Connection::parseError(
-    sys::error_code const & errorCode
+    sys::error_code const & errorCode,
+    std::size_t const bytesTransferred
 )
 {
-    m_task.parseError( errorCode );
+    m_task.parseError( errorCode, bytesTransferred );
 }
 
 void Connection::process(
