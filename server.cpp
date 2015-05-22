@@ -57,7 +57,8 @@ public:
 
     void process(
         asio::streambuf & buffer,
-        sys::error_code const & errorCode
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
     )
     {
         std::istream iss( & buffer );
@@ -72,14 +73,14 @@ public:
             m_connection->setId( id );
 
             char const * const line = "Hello.";
-            m_connection->responseAndRead( line, strlen( line ) );
+            m_connection->responseAndReadLine( line, strlen( line ) );
         }
         else if( command == 'b' )
         {
             std::string message;
             iss >> message >> cr >> lf;
 
-            m_connection->broadcastAndRead( message.c_str(), message.size() );
+            m_connection->broadcastAndReadLine( message.c_str(), message.size() );
         }
         else if( command == 'u' )
         {
@@ -87,7 +88,7 @@ public:
             std::string message;
             iss >> id >> message >> cr >> lf;
 
-            m_connection->unicastAndRead( id, message.c_str(), message.size() );
+            m_connection->unicastAndReadLine( id, message.c_str(), message.size() );
         }
         else
         {
@@ -150,15 +151,36 @@ public: // api
     );
 
     void process(
-        sys::error_code const & errorCode
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
     );
 
-    void broadcastAndRead(
+    void readLine(
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
+    );
+
+    void readSome(
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
+    );
+
+    void stop(
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
+    );
+
+    void broadcastAndProcess(
         char const * const message,
         std::size_t const size
     );
 
-    void broadcastAndProcess(
+    void broadcastAndReadLine(
+        char const * const message,
+        std::size_t const size
+    );
+
+    void broadcastAndReadSome(
         char const * const message,
         std::size_t const size
     );
@@ -168,7 +190,19 @@ public: // api
         std::size_t const size
     );
 
-    void unicastAndRead(
+    void unicastAndProcess(
+        std::string const & receiverId,
+        char const * const message,
+        std::size_t const size
+    );
+
+    void unicastAndReadLine(
+        std::string const & receiverId,
+        char const * const message,
+        std::size_t const size
+    );
+
+    void unicastAndReadSome(
         std::string const & receiverId,
         char const * const message,
         std::size_t const size
@@ -180,22 +214,20 @@ public: // api
         std::size_t const size
     );
 
-    void unicastAndProcess(
-        std::string const & receiverId,
-        char const * const message,
-        std::size_t const size
-    );
-
-    void responseAndRead(
-        char const * const message,
-        std::size_t const size
-    );
-
     void responseAndProcess(
         char const * const message,
         std::size_t const size
     );
 
+    void responseAndReadLine(
+        char const * const message,
+        std::size_t const size
+    );
+
+    void responseAndReadSome(
+        char const * const message,
+        std::size_t const size
+    );
     void responseAndStop(
         char const * const message,
         std::size_t const size
@@ -223,24 +255,6 @@ private:
         MemberPtr && memberPtr,
         char const * const message,
         std::size_t const size
-    );
-
-    void readLine(
-        sys::error_code const & errorCode,
-        std::size_t const bytesTransferred
-    );
-
-    void readSome(
-        sys::error_code const & errorCode,
-        std::size_t const bytesTransferred
-    );
-
-    void startAgain(
-        sys::error_code const & errorCode
-    );
-
-    void stop(
-        sys::error_code const & errorCode
     );
 
 private:
@@ -293,7 +307,7 @@ void Connection::start(
     {
         case Action::ReadCompleted:
         {
-            process( sys::error_code() );
+            process( sys::error_code(), 0 );
             
             break;
         }
@@ -361,10 +375,11 @@ void Connection::parseError(
 }
 
 void Connection::process(
-    sys::error_code const & errorCode
+    sys::error_code const & errorCode,
+    std::size_t const bytesTransferred
 )
 {
-    m_task.process( m_buffer, errorCode );
+    m_task.process( m_buffer, errorCode, bytesTransferred );
 }
 
 void Connection::readLine(
@@ -397,22 +412,9 @@ void Connection::readSome(
     }
 }
 
-void Connection::startAgain(
-    sys::error_code const & errorCode
-)
-{
-    if( errorCode )
-    {
-        std::cerr << "Start Again Error: " << errorCode.message() << std::endl;
-    }
-    else
-    {
-        start();
-    }
-}
-
 void Connection::stop(
-    sys::error_code const & errorCode
+    sys::error_code const & errorCode,
+    std::size_t const bytesTransferred
 )
 {
 }
@@ -496,7 +498,8 @@ void Connection::responseImpl(
     auto const continuation = boost::bind(
         std::forward< MemberPtr >( memberPtr ),
         shared_from_this(),
-        placeholders::error
+        placeholders::error,
+        placeholders::bytes_transferred
     );
 
     asio::async_write(
@@ -506,12 +509,20 @@ void Connection::responseImpl(
     );
 }
 
-void Connection::responseAndRead(
+void Connection::responseAndReadLine(
     char const * const message,
     std::size_t const size
 )
 {
-    responseImpl( & Connection::startAgain, message, size );
+    responseImpl( & Connection::readLine, message, size );
+}
+
+void Connection::responseAndReadSome(
+    char const * const message,
+    std::size_t const size
+)
+{
+    responseImpl( & Connection::readSome, message, size );
 }
 
 void Connection::responseAndProcess(
@@ -547,7 +558,8 @@ void Connection::broadcastImpl(
         auto const continuation = boost::bind(
             std::forward< MemberPtr >( memberPtr ),
             shared_from_this(),
-            placeholders::error
+            placeholders::error,
+            placeholders::bytes_transferred
         );
 
         asio::async_write(
@@ -568,12 +580,20 @@ void Connection::broadcastAndStop(
     broadcastImpl( & Connection::stop, message, size );
 }
 
-void Connection::broadcastAndRead(
+void Connection::broadcastAndReadLine(
     char const * const message,
     std::size_t const size
 )
 {
-    broadcastImpl( & Connection::startAgain, message, size );
+    broadcastImpl( & Connection::readLine, message, size );
+}
+
+void Connection::broadcastAndReadSome(
+    char const * const message,
+    std::size_t const size
+)
+{
+    broadcastImpl( & Connection::readSome, message, size );
 }
 
 void Connection::broadcastAndProcess(
@@ -602,7 +622,8 @@ void Connection::unicastImpl(
         auto const stop = boost::bind(
             std::forward< MemberPtr >( memberPtr ),
             shared_from_this(),
-            placeholders::error
+            placeholders::error,
+            placeholders::bytes_transferred
         );
 
         asio::async_write(
@@ -633,13 +654,22 @@ void Connection::unicastAndProcess(
     unicastImpl( & Connection::process, receiverId, message, size );
 }
 
-void Connection::unicastAndRead(
+void Connection::unicastAndReadLine(
     std::string const & receiverId,
     char const * const message,
     std::size_t const size
 )
 {
-    unicastImpl( & Connection::startAgain, receiverId, message, size );
+    unicastImpl( & Connection::readLine, receiverId, message, size );
+}
+
+void Connection::unicastAndReadSome(
+    std::string const & receiverId,
+    char const * const message,
+    std::size_t const size
+)
+{
+    unicastImpl( & Connection::readSome, receiverId, message, size );
 }
 
 class Server
