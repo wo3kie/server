@@ -22,12 +22,13 @@ template< typename TConnection >
 class Task
 {
 public:
+
     Task( TConnection * connection )
         : m_connection( connection )
     {
     }
 
-    typename TConnection::Action start()
+    static typename TConnection::Action start()
     {
         return TConnection::Action::ReadLine;
     }
@@ -100,6 +101,7 @@ public:
     }
 
 private:
+
     TConnection * m_connection;
 };
 
@@ -436,7 +438,7 @@ public:
     template< typename Function, class... Args >
     void forEach( Function&& func, Args && ...args )
     {
-        boost::lock_guard< boost::mutex > lock( m_mutex );
+        boost::shared_lock< boost::shared_mutex > lock( m_mutex );
 
         for( auto & connection : m_connections )
         {
@@ -447,7 +449,7 @@ public:
     template< typename Predicate, typename Function, class... Args >
     void forEachIf( Predicate && predicate, Function && func, Args && ...args )
     {
-        boost::lock_guard< boost::mutex > lock( m_mutex );
+        boost::shared_lock< boost::shared_mutex > lock( m_mutex );
 
         for( auto & connection : m_connections )
         {
@@ -462,7 +464,7 @@ public:
         ConnectionPtr & connection
     )
     {
-        boost::lock_guard< boost::mutex > lock( m_mutex );
+        boost::unique_lock< boost::shared_mutex > lock( m_mutex );
 
         m_connections.insert( connection ); 
     }
@@ -471,7 +473,7 @@ public:
         ConnectionPtr const & connection
     )
     {
-        boost::lock_guard< boost::mutex > lock( m_mutex );
+        boost::unique_lock< boost::shared_mutex > lock( m_mutex );
 
         auto const pos = m_connections.find( connection );
 
@@ -482,7 +484,7 @@ public:
 
 private:
 
-    boost::mutex m_mutex;
+    boost::shared_mutex m_mutex;
     ConnectionsPtr m_connections;
 };
 
