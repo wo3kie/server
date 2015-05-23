@@ -52,6 +52,12 @@ public:
         std::size_t const bytesTransferred
     )
     {
+        if( errorCode )
+        {
+            m_connection->stop();
+            return;
+        }
+
         std::cerr
             << "Parse error"
             << std::endl;
@@ -63,6 +69,12 @@ public:
         std::size_t const bytesTransferred
     )
     {
+        if( errorCode )
+        {
+            m_connection->stop();
+            return;
+        }
+
         std::istream iss( & buffer );
 
         char command, cr, lf;
@@ -131,7 +143,7 @@ public:
 
     ip::tcp::socket & socket();
 
-    void onStop();
+    void disconnect();
 
     void start(
         Action const action = Task< Connection >::start()
@@ -170,8 +182,8 @@ public: // api
     );
 
     void stop(
-        sys::error_code const & errorCode,
-        std::size_t const bytesTransferred
+        sys::error_code const & errorCode = sys::error_code(),
+        std::size_t const bytesTransferred = 0
     );
 
     void broadcastAndProcess(
@@ -397,6 +409,8 @@ void Connection::readLine(
     if( errorCode )
     {
         std::cerr << "Response Read Error: " << errorCode.message() << std::endl;
+
+        stop();
     }
     else
     {
@@ -412,18 +426,13 @@ void Connection::readSome(
     if( errorCode )
     {
         std::cerr << "Response Read Error: " << errorCode.message() << std::endl;
+
+        stop();
     }
     else
     {
         start( parseSome() );
     }
-}
-
-void Connection::stop(
-    sys::error_code const & errorCode,
-    std::size_t const bytesTransferred
-)
-{
 }
 
 typedef Connection::ConnectionPtr ConnectionPtr;
@@ -488,7 +497,7 @@ private:
     ConnectionsPtr m_connections;
 };
 
-void Connection::onStop()
+void Connection::disconnect()
 {
     char const * const message = "Goodbye.";
 
@@ -679,6 +688,15 @@ void Connection::unicastAndReadSome(
     unicastImpl( & Connection::readSome, receiverId, message, size );
 }
 
+void Connection::stop(
+    sys::error_code const & errorCode,
+    std::size_t const bytesTransferred
+)
+{
+    std::cout << "Conection closed" << std::endl;
+    m_connectionManager.remove( shared_from_this() );
+}
+
 class Server
 {
 public:
@@ -761,7 +779,7 @@ private:
     void onStop()
     {
         m_connectionManager.forEach(
-            boost::bind( & Connection::onStop, _1 )
+            boost::bind( & Connection::disconnect, _1 )
         );
 
         m_ioService.stop();
