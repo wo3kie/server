@@ -33,17 +33,19 @@ public:
     }
 
     typename TConnection::Action parseLine(
-        asio::streambuf & buffer
+        asio::streambuf & buffer,
+        std::size_t const bytesTransferred
     )
     {
-        return TConnection::Action::ReadCompleted;
+        return TConnection::Action::Process;
     }
 
     typename TConnection::Action parseSome(
-        asio::streambuf & buffer
+        asio::streambuf & buffer,
+        std::size_t const bytesTransferred
     )
     {
-        return TConnection::Action::ReadCompleted;
+        return TConnection::Action::Process;
     }
 
     void parseError(
@@ -72,14 +74,16 @@ public:
             m_connection->setId( id );
 
             char const * const line = "Hello.";
-            m_connection->responseAndRead( line, strlen( line ) );
+            m_connection->response( line, strlen( line ) );
+            m_connection->start( TConnection::Action::ReadLine );
         }
         else if( command == 'b' )
         {
             std::string message;
             iss >> std::noskipws >> space >>  message >> cr >> lf;
 
-            m_connection->broadcastAndRead( message.c_str(), message.size() );
+            m_connection->broadcast( message.c_str(), message.size() );
+            m_connection->start( TConnection::Action::ReadLine );
         }
         else if( command == 'u' )
         {
@@ -87,13 +91,20 @@ public:
             std::string message;
             iss >> std::noskipws >> space >> id >> space >> message >> cr >> lf;
 
-            m_connection->unicastAndRead( id, message.c_str(), message.size() );
+            m_connection->unicast( id, message.c_str(), message.size() );
+            m_connection->start( TConnection::Action::ReadLine );
+        }
+        else if( command == 'd' )
+        {
+            iss >> std::noskipws >> cr >> lf;
+
+            m_connection->disconnect();
         }
         else
         {
             char const * const line = "unknown";
-
-            m_connection->responseAndRead( line, strlen( line ) );
+            m_connection->response( line, strlen( line ) );
+            m_connection->start( TConnection::Action::ReadLine );
         }
     }
 
@@ -114,10 +125,10 @@ public:
 
     enum class Action
     {
-        ReadCompleted,
-        ReadError,
+        Process,
         ReadLine,
-        ReadSome
+        ReadSome,
+        ReadError
     };
 
     Connection( 
@@ -127,7 +138,7 @@ public:
 
     ip::tcp::socket & socket();
 
-    void onStop();
+    void disconnect();
 
     void start(
         Action const action = Task< Connection >::start()
@@ -141,10 +152,6 @@ public: // api
 
     std::string const & getId() const ;
 
-    Action parseLine();
-
-    Action parseSome();
-
     void parseError(
         sys::error_code const & errorCode
     );
@@ -153,84 +160,36 @@ public: // api
         sys::error_code const & errorCode
     );
 
-    void broadcastAndRead(
+    void broadcast(
         char const * const message,
         std::size_t const size
     );
 
-    void broadcastAndProcess(
-        char const * const message,
-        std::size_t const size
-    );
-
-    void broadcastAndStop(
-        char const * const message,
-        std::size_t const size
-    );
-
-    void unicastAndRead(
+    void unicast(
         std::string const & receiverId,
         char const * const message,
         std::size_t const size
     );
 
-    void unicastAndStop(
-        std::string const & receiverId,
+    void response(
         char const * const message,
         std::size_t const size
     );
 
-    void unicastAndProcess(
-        std::string const & receiverId,
-        char const * const message,
-        std::size_t const size
-    );
-
-    void responseAndRead(
-        char const * const message,
-        std::size_t const size
-    );
-
-    void responseAndProcess(
-        char const * const message,
-        std::size_t const size
-    );
-
-    void responseAndStop(
-        char const * const message,
-        std::size_t const size
-    );
+    void doNothing(
+        sys::error_code const & errorCode
+    )
+    {
+    }
 
 private:
 
-    template< typename MemberPtr >
-    void broadcastImpl(
-        MemberPtr && memberPtr,
-        char const * const message,
-        std::size_t const size
-    );
-
-    template< typename MemberPtr >
-    void unicastImpl(
-        MemberPtr && memberPtr,
-        std::string const & receiverId,
-        char const * const message,
-        std::size_t const size
-    );
-
-    template< typename MemberPtr >
-    void responseImpl(
-        MemberPtr && memberPtr,
-        char const * const message,
-        std::size_t const size
-    );
-
-    void readLine(
+    void parseLine(
         sys::error_code const & errorCode,
         std::size_t const bytesTransferred
     );
 
-    void readSome(
+    void parseSome(
         sys::error_code const & errorCode,
         std::size_t const bytesTransferred
     );
@@ -291,7 +250,7 @@ void Connection::start(
 {
     switch( action )
     {
-        case Action::ReadCompleted:
+        case Action::Process:
         {
             process( sys::error_code() );
             
@@ -305,8 +264,8 @@ void Connection::start(
 
         case Action::ReadLine:
         {
-            auto const readLine = boost::bind(
-                & Connection::readLine,
+            auto const parseLine = boost::bind(
+                & Connection::parseLine,
                 shared_from_this(),
                 placeholders::error,
                 placeholders::bytes_transferred()
@@ -316,7 +275,7 @@ void Connection::start(
                 m_socket,
                 m_buffer,
                 "\r\n",
-                m_strand.wrap( readLine )
+                m_strand.wrap( parseLine )
             );
 
             break;
@@ -324,8 +283,8 @@ void Connection::start(
 
         case Action::ReadSome:
         {
-            auto const readSome = boost::bind(
-                & Connection::readSome,
+            auto const parseSome = boost::bind(
+                & Connection::parseSome,
                 shared_from_this(),
                 placeholders::error,
                 placeholders::bytes_transferred()
@@ -335,22 +294,12 @@ void Connection::start(
                 m_socket,
                 m_buffer,
                 asio::transfer_at_least( 1 ),
-                m_strand.wrap( readSome )
+                m_strand.wrap( parseSome )
             );
 
             break;
         }
     }
-}
-
-Connection::Action Connection::parseLine()
-{
-    return m_task.parseLine( m_buffer );
-}
-
-Connection::Action Connection::parseSome()
-{
-    return m_task.parseLine( m_buffer );
 }
 
 void Connection::parseError(
@@ -367,33 +316,33 @@ void Connection::process(
     m_task.process( m_buffer, errorCode );
 }
 
-void Connection::readLine(
+void Connection::parseLine(
     sys::error_code const & errorCode,
     std::size_t const bytesTransferred
 )
 {
     if( errorCode )
     {
-        std::cerr << "Response Read Error: " << errorCode.message() << std::endl;
+        std::cerr << "Parse Line Error: " << errorCode.message() << std::endl;
     }
     else
     {
-        start( parseLine() );
+        start( m_task.parseLine( m_buffer, bytesTransferred ) );
     }
 }
 
-void Connection::readSome(
+void Connection::parseSome(
     sys::error_code const & errorCode,
     std::size_t const bytesTransferred
 )
 {
     if( errorCode )
     {
-        std::cerr << "Response Read Error: " << errorCode.message() << std::endl;
+        std::cerr << "Parse Some Error: " << errorCode.message() << std::endl;
     }
     else
     {
-        start( parseSome() );
+        start( m_task.parseSome( m_buffer, bytesTransferred ) );
     }
 }
 
@@ -409,12 +358,6 @@ void Connection::startAgain(
     {
         start();
     }
-}
-
-void Connection::stop(
-    sys::error_code const & errorCode
-)
-{
 }
 
 typedef Connection::ConnectionPtr ConnectionPtr;
@@ -479,22 +422,20 @@ private:
     ConnectionsPtr m_connections;
 };
 
-void Connection::onStop()
+void Connection::disconnect()
 {
     char const * const message = "Goodbye.";
 
-    responseAndStop( message, strlen( message ) );
+    response( message, strlen( message ) );
 }
 
-template< typename MemberPtr >
-void Connection::responseImpl(
-    MemberPtr && memberPtr,
+void Connection::response(
     char const * const message,
     std::size_t const size
 )
 {
     auto const continuation = boost::bind(
-        std::forward< MemberPtr >( memberPtr ),
+        & Connection::doNothing,
         shared_from_this(),
         placeholders::error
     );
@@ -506,33 +447,7 @@ void Connection::responseImpl(
     );
 }
 
-void Connection::responseAndRead(
-    char const * const message,
-    std::size_t const size
-)
-{
-    responseImpl( & Connection::startAgain, message, size );
-}
-
-void Connection::responseAndProcess(
-    char const * const message,
-    std::size_t const size
-)
-{
-    responseImpl( & Connection::process, message, size );
-}
-
-void Connection::responseAndStop(
-    char const * const message,
-    std::size_t const size
-)
-{
-    responseImpl( & Connection::stop, message, size );
-}
-
-template< typename MemberPtr >
-void Connection::broadcastImpl(
-    MemberPtr && memberPtr,
+void Connection::broadcast(
     char const * const message,
     std::size_t const size
 )
@@ -542,10 +457,10 @@ void Connection::broadcastImpl(
         return connectionPtr->socket().native_handle() != this->socket().native_handle();
     };
 
-    auto sendMessage = [ this, & size, & message, & memberPtr ]( ConnectionPtr const & connectionPtr )
+    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
         auto const continuation = boost::bind(
-            std::forward< MemberPtr >( memberPtr ),
+            & Connection::doNothing,
             shared_from_this(),
             placeholders::error
         );
@@ -560,33 +475,7 @@ void Connection::broadcastImpl(
     m_connectionManager.forEachIf( skipSender, sendMessage );
 }
 
-void Connection::broadcastAndStop(
-    char const * const message,
-    std::size_t const size
-)
-{
-    broadcastImpl( & Connection::stop, message, size );
-}
-
-void Connection::broadcastAndRead(
-    char const * const message,
-    std::size_t const size
-)
-{
-    broadcastImpl( & Connection::startAgain, message, size );
-}
-
-void Connection::broadcastAndProcess(
-    char const * const message,
-    std::size_t const size
-)
-{
-    broadcastImpl( & Connection::process, message, size );
-}
-
-template< typename MemberPtr >
-void Connection::unicastImpl(
-    MemberPtr && memberPtr,
+void Connection::unicast(
     std::string const & receiverId,
     char const * const message,
     std::size_t const size
@@ -597,10 +486,10 @@ void Connection::unicastImpl(
         return connectionPtr->getId() == receiverId;
     };
 
-    auto sendMessage = [ this, & size, & message, & memberPtr ]( ConnectionPtr const & connectionPtr )
+    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
         auto const stop = boost::bind(
-            std::forward< MemberPtr >( memberPtr ),
+            & Connection::doNothing,
             shared_from_this(),
             placeholders::error
         );
@@ -615,31 +504,11 @@ void Connection::unicastImpl(
     m_connectionManager.forEachIf( matchReceiver, sendMessage );
 }
 
-void Connection::unicastAndStop(
-    std::string const & receiverId,
-    char const * const message,
-    std::size_t const size
+void Connection::stop(
+    sys::error_code const & errorCode
 )
 {
-    unicastImpl( & Connection::stop, receiverId, message, size );
-}
-
-void Connection::unicastAndProcess(
-    std::string const & receiverId,
-    char const * const message,
-    std::size_t const size
-)
-{
-    unicastImpl( & Connection::process, receiverId, message, size );
-}
-
-void Connection::unicastAndRead(
-    std::string const & receiverId,
-    char const * const message,
-    std::size_t const size
-)
-{
-    unicastImpl( & Connection::startAgain, receiverId, message, size );
+    m_connectionManager.remove( shared_from_this() );
 }
 
 class Server
@@ -657,7 +526,7 @@ public:
         m_signals.add( SIGQUIT );
 
         m_signals.async_wait(
-            boost::bind( & Server::onStop, this )
+            boost::bind( & Server::disconnect, this )
         );
 
         ip::tcp::resolver resolver( m_ioService );
@@ -721,10 +590,10 @@ private:
         startAccept();
     }
 
-    void onStop()
+    void disconnect()
     {
         m_connectionManager.forEach(
-            boost::bind( & Connection::onStop, _1 )
+            boost::bind( & Connection::disconnect, _1 )
         );
 
         m_ioService.stop();
