@@ -1,3 +1,5 @@
+#include <chrono>
+#include <iomanip>
 #include <set>
 #include <sstream>
 #include <string>
@@ -61,7 +63,7 @@ public:
             m_connection->broadcast( message.c_str(), message.size() );
             m_connection->read();
         }
-        else if( command == 'u' )
+        else if( command == 's' )
         {
             std::string id;
             std::string message;
@@ -74,7 +76,16 @@ public:
         {
             m_connection->disconnect();
         }
-        else if( command == 'r' )
+        else if( command == 'l' )
+        {
+            std::string id;
+            std::string message;
+            iss >> message;
+
+            m_connection->log( message.c_str(), message.size() );
+            m_connection->read();
+        }
+        else if( command == 'e' )
         {
             std::string message;
             iss >> message;
@@ -168,6 +179,11 @@ public: // api
     void broadcast(
         char const * const message,
         std::size_t const size
+    );
+
+    void log(
+        char const * const message,
+        std::size_t const size 
     );
 
 private:
@@ -463,6 +479,16 @@ void Connection::broadcast(
     };
 
     m_connectionManager.forEachIf( skipSender, sendMessage );
+}
+
+void Connection::log(
+    char const * const message,
+    std::size_t const size
+)
+{
+    std::cout << ( getId().empty() ? "-" : getId() ) << ": ";
+    std::cout.write( message, size );
+    std::cout << std::endl;
 }
 
 void Connection::stop()
