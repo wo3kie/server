@@ -73,10 +73,18 @@ public:
         {
             m_connection->disconnect();
         }
+        else if( command == 'r' )
+        {
+            std::string message;
+            iss >> message;
+
+            m_connection->response( message.c_str(), message.size() );
+            m_connection->read();
+        }
         else
         {
-            char const * const line = "unknown";
-            m_connection->response( line, strlen( line ) );
+            char const * const message = "unknown";
+            m_connection->response( message, strlen( message ) );
             m_connection->read();
         }
 
@@ -520,8 +528,6 @@ private:
     {
         m_newConnection.reset( new Connection( m_ioService, m_connectionManager ) );
 
-        m_connectionManager.add( m_newConnection );
-
         auto const onAccepted = boost::bind(
             & Server::onAccepted,
             this,
@@ -540,6 +546,8 @@ private:
     {
         if( ! errorCode )
         {
+            m_connectionManager.add( m_newConnection );
+
             m_newConnection->start();
         }
 
