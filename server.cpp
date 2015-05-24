@@ -430,35 +430,6 @@ void Connection::response(
     );
 }
 
-void Connection::unicast(
-    std::string const & receiverId,
-    char const * const message,
-    std::size_t const size
-)
-{
-    auto const matchReceiver = [ this, & receiverId ]( ConnectionPtr const & connectionPtr )
-    {
-        return connectionPtr->getId() == receiverId;
-    };
-
-    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
-    {
-        auto const continuation = boost::bind(
-            & Connection::doNothing,
-            shared_from_this(),
-            placeholders::error
-        );
-
-        asio::async_write(
-            connectionPtr->socket(),
-            asio::buffer( message, size ),
-            continuation
-        );
-    };
-
-    m_connectionManager.forEachIf( matchReceiver, sendMessage );
-}
-
 void Connection::log(
     char const * const message,
     std::size_t const size
@@ -552,6 +523,36 @@ public:
         m_connectionManager.forEachIf( skipSender, sendMessage );
     }
 
+    void unicast(
+        ConnectionPtr const & sender,
+        std::string const & receiverId,
+        char const * const message,
+        std::size_t const size
+    )
+    {
+        auto const matchReceiver = [ this, & receiverId ]( ConnectionPtr const & connectionPtr )
+        {
+            return receiverId == connectionPtr->getId();
+        };
+
+        auto sendMessage = [ this, & sender, & size, & message ]( ConnectionPtr const & connectionPtr )
+        {
+            auto const continuation = boost::bind(
+                & Connection::doNothing,
+                sender,
+                placeholders::error
+            );
+
+            asio::async_write(
+                connectionPtr->socket(),
+                asio::buffer( message, size ),
+                continuation
+            );
+        };
+
+        m_connectionManager.forEachIf( matchReceiver, sendMessage );
+    }
+
 private:
 
     void startAccept()
@@ -606,6 +607,15 @@ void Connection::broadcast(
 )
 {
     m_server.broadcast( shared_from_this(), message, size );
+}
+
+void Connection::unicast(
+    std::string const & receiverId,
+    char const * const message,
+    std::size_t const size
+)
+{
+    m_server.unicast( shared_from_this(), receiverId, message, size );
 }
 
 int main( int argc, char* argv[] )
