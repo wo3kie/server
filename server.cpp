@@ -48,8 +48,9 @@ public:
             iss >> id;
             m_connection->setId( id );
 
-            char const * const line = "Hello.";
-            m_connection->response( line, strlen( line ) );
+            const std::string message = "Hello " + id;
+
+            m_connection->response( message.c_str(), message.size() );
             m_connection->read();
         }
         else if( command == 'b' )
@@ -133,6 +134,8 @@ public:
 
     void disconnect();
 
+    void stop();
+
     void start(
         Action const action = Task< Connection >::start()
     );
@@ -167,18 +170,6 @@ public: // api
         std::size_t const size
     );
 
-    void doNothing(
-        sys::error_code const & errorCode
-    )
-    {
-        if( errorCode )
-        {
-            std::cerr << "Do Nothing Error: " << errorCode.message() << std::endl;
-
-            disconnect();
-        }
-    }
-
 private:
 
     void parse(
@@ -190,9 +181,17 @@ private:
         sys::error_code const & errorCode
     );
 
-    void stop(
+    void doNothing(
         sys::error_code const & errorCode
-    );
+    )
+    {
+        if( errorCode )
+        {
+            std::cerr << "Do Nothing Error: " << errorCode.message() << std::endl;
+
+            disconnect();
+        }
+    }
 
 private:
 
@@ -422,7 +421,7 @@ void Connection::unicast(
 
     auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
-        auto const stop = boost::bind(
+        auto const continuation = boost::bind(
             & Connection::doNothing,
             shared_from_this(),
             placeholders::error
@@ -431,7 +430,7 @@ void Connection::unicast(
         asio::async_write(
             connectionPtr->socket(),
             asio::buffer( message, size ),
-            stop
+            continuation
         );
     };
 
@@ -466,11 +465,10 @@ void Connection::broadcast(
     m_connectionManager.forEachIf( skipSender, sendMessage );
 }
 
-void Connection::stop(
-    sys::error_code const & errorCode
-)
+void Connection::stop()
 {
-    m_connectionManager.remove( shared_from_this() );
+    char const * const message = "Goodbye.";
+    response( message, strlen( message ) );
 }
 
 class Server
@@ -480,7 +478,8 @@ public:
     Server(
         std::string const & port
     )
-        : m_acceptor( m_ioService )
+        : m_strand( m_ioService )
+        , m_acceptor( m_ioService )
         , m_signals( m_ioService )
     {
         m_signals.add( SIGINT );
@@ -488,7 +487,7 @@ public:
         m_signals.add( SIGQUIT );
 
         m_signals.async_wait(
-            boost::bind( & Server::disconnect, this )
+            boost::bind( & Server::stop, this )
         );
 
         ip::tcp::resolver resolver( m_ioService );
@@ -552,18 +551,15 @@ private:
         startAccept();
     }
 
-    void disconnect()
+    void stop()
     {
-        m_connectionManager.forEach(
-            boost::bind( & Connection::disconnect, _1 )
-        );
-
         m_ioService.stop();
     }
 
 private:
 
     asio::io_service m_ioService;
+    asio::io_service::strand m_strand;
     asio::ip::tcp::acceptor m_acceptor;
     asio::signal_set m_signals;
 
