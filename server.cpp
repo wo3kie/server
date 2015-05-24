@@ -50,7 +50,7 @@ public:
             iss >> id;
             m_connection->setId( id );
 
-            const std::string message = "Hello " + id;
+            const std::string message = "Hello '" + id + "'.";
 
             m_connection->response( message.c_str(), message.size() );
             m_connection->read();
@@ -95,8 +95,9 @@ public:
         }
         else
         {
-            char const * const message = "unknown";
-            m_connection->response( message, strlen( message ) );
+            std::string const message = "Unknown command '" + std::string( 1, command ) + "'.";
+
+            m_connection->response( message.c_str(), message.size() );
             m_connection->read();
         }
 
@@ -119,6 +120,7 @@ private:
 };
 
 class ConnectionManager;
+class Server;
 
 class Connection
     : public boost::enable_shared_from_this< Connection >
@@ -138,7 +140,8 @@ public:
 
     Connection( 
         asio::io_service & ioService,
-        ConnectionManager & connectionManager
+        ConnectionManager & connectionManager,
+        Server & server
     );
 
     ip::tcp::socket & socket();
@@ -186,17 +189,6 @@ public: // api
         std::size_t const size 
     );
 
-private:
-
-    void parse(
-        sys::error_code const & errorCode,
-        std::size_t const bytesTransferred
-    );
-
-    void startAgain(
-        sys::error_code const & errorCode
-    );
-
     void doNothing(
         sys::error_code const & errorCode
     )
@@ -211,9 +203,21 @@ private:
 
 private:
 
+    void parse(
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
+    );
+
+    void startAgain(
+        sys::error_code const & errorCode
+    );
+
+private:
+
     ip::tcp::socket m_socket;
     asio::io_service::strand m_strand;
     ConnectionManager & m_connectionManager;
+    Server & m_server;
 
     Task< Connection > m_task;
 
@@ -226,11 +230,13 @@ private:
 
 Connection::Connection( 
     asio::io_service & ioService,
-    ConnectionManager & connectionManager
+    ConnectionManager & connectionManager,
+    Server & server
 )
     : m_socket( ioService )
     , m_strand( ioService )
     , m_connectionManager( connectionManager )
+    , m_server( server )
     , m_task( this )
 {
 }
@@ -453,34 +459,6 @@ void Connection::unicast(
     m_connectionManager.forEachIf( matchReceiver, sendMessage );
 }
 
-void Connection::broadcast(
-    char const * const message,
-    std::size_t const size
-)
-{
-    auto const skipSender = [ this ]( ConnectionPtr const & connectionPtr )
-    {
-        return connectionPtr->socket().native_handle() != this->socket().native_handle();
-    };
-
-    auto sendMessage = [ this, & size, & message ]( ConnectionPtr const & connectionPtr )
-    {
-        auto const continuation = boost::bind(
-            & Connection::doNothing,
-            shared_from_this(),
-            placeholders::error
-        );
-
-        asio::async_write(
-            connectionPtr->socket(),
-            asio::buffer( message, size ),
-            continuation
-        );
-    };
-
-    m_connectionManager.forEachIf( skipSender, sendMessage );
-}
-
 void Connection::log(
     char const * const message,
     std::size_t const size
@@ -545,11 +523,40 @@ public:
         threadGroup.join_all();
     }
 
+    void broadcast(
+        ConnectionPtr const & sender,
+        char const * const message,
+        std::size_t const size
+    )
+    {
+        auto const skipSender = [ & sender ]( ConnectionPtr const & connectionPtr )
+        {
+            return sender->socket().native_handle() != connectionPtr->socket().native_handle();
+        };
+
+        auto sendMessage = [ this, & sender, & size, & message ]( ConnectionPtr const & connectionPtr )
+        {
+            auto const continuation = boost::bind(
+                & Connection::doNothing,
+                sender,
+                placeholders::error
+            );
+
+            asio::async_write(
+                connectionPtr->socket(),
+                asio::buffer( message, size ),
+                continuation
+            );
+        };
+
+        m_connectionManager.forEachIf( skipSender, sendMessage );
+    }
+
 private:
 
     void startAccept()
     {
-        m_newConnection.reset( new Connection( m_ioService, m_connectionManager ) );
+        m_newConnection.reset( new Connection( m_ioService, m_connectionManager, *this ) );
 
         auto const onAccepted = boost::bind(
             & Server::onAccepted,
@@ -592,6 +599,14 @@ private:
     ConnectionPtr m_newConnection;
     ConnectionManager m_connectionManager;
 };
+
+void Connection::broadcast(
+    char const * const message,
+    std::size_t const size
+)
+{
+    m_server.broadcast( shared_from_this(), message, size );
+}
 
 int main( int argc, char* argv[] )
 {
