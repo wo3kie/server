@@ -388,9 +388,7 @@ private:
 
 void Connection::disconnect()
 {
-    char const * const message = "Goodbye.";
-
-    response( message, strlen( message ) );
+    m_connectionManager.remove( shared_from_this() );
 }
 
 void Connection::response(
