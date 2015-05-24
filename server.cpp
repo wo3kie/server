@@ -216,7 +216,6 @@ private:
 
     ip::tcp::socket m_socket;
     asio::io_service::strand m_strand;
-    ConnectionManager & m_connectionManager;
     Server & m_server;
 
     Task< Connection > m_task;
@@ -235,7 +234,6 @@ Connection::Connection(
 )
     : m_socket( ioService )
     , m_strand( ioService )
-    , m_connectionManager( connectionManager )
     , m_server( server )
     , m_task( this )
 {
@@ -407,11 +405,6 @@ private:
     ConnectionsPtr m_connections;
 };
 
-void Connection::disconnect()
-{
-    m_connectionManager.remove( shared_from_this() );
-}
-
 void Connection::response(
     char const * const message,
     std::size_t const size
@@ -553,6 +546,13 @@ public:
         m_connectionManager.forEachIf( matchReceiver, sendMessage );
     }
 
+    void disconnect(
+        ConnectionPtr const & sender
+    )
+    {
+        m_connectionManager.remove( sender );
+    }
+
 private:
 
     void startAccept()
@@ -616,6 +616,12 @@ void Connection::unicast(
 )
 {
     m_server.unicast( shared_from_this(), receiverId, message, size );
+}
+
+
+void Connection::disconnect()
+{
+    m_server.disconnect( shared_from_this() );
 }
 
 int main( int argc, char* argv[] )
