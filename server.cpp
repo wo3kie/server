@@ -162,8 +162,3 @@ void Server::stop()
     m_ioService.stop();
 }
 
-int main( int argc, char* argv[] )
-{
-    Server( argv[1] ).run();
-}
-
