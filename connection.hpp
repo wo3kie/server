@@ -7,7 +7,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "./task.hpp"
+#include "./task_chat.hpp"
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
@@ -46,7 +46,7 @@ public:
     void stop();
 
     void start(
-        Action const action = Task< Connection >::start()
+        Action const action = TaskChat< Connection >::start()
     );
 
 public: // api
@@ -113,7 +113,7 @@ private:
     asio::io_service::strand m_strand;
     Server & m_server;
 
-    Task< Connection > m_task;
+    TaskChat< Connection > m_task;
 
     std::string m_id;
 

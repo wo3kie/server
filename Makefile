@@ -10,13 +10,13 @@ chat: chat.o server.o connection.o
 client.o: client.cpp
 	clang++ --std=c++11 -g client.cpp -c -o client.o
 
-server.o: server.cpp server.hpp connection.hpp connection_manager.hpp task.hpp
+server.o: server.cpp server.hpp connection.hpp connection_manager.hpp task_chat.hpp
 	clang++ --std=c++11 -g -c server.cpp -o server.o
 
 connection.o: connection.cpp connection.hpp server.hpp
 	clang++ --std=c++11 -g -c connection.cpp -o connection.o
 
-chat.o: server.hpp connection.hpp connection_manager.hpp task.hpp
+chat.o: server.hpp connection.hpp connection_manager.hpp task_chat.hpp
 	clang++ --std=c++11 -g -c chat.cpp -o chat.o
 
 .PHONY: clean
