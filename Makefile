@@ -1,19 +1,16 @@
 
-all: client chat
+all: client chat echo
 
-client: client.o
-	clang++ --std=c++11 client.o -o client -lboost_system -lboost_thread -pthread
+client: client.cpp
+	clang++ --std=c++11 -g client.cpp -o client -lboost_system -lboost_thread -pthread
 
-client.o: client.cpp
-	clang++ --std=c++11 -g client.cpp -c -o client.o
+chat: server.hpp server.tpp connection.hpp connection.tpp connection_manager.hpp task_chat.hpp
+	clang++ --std=c++11 -g chat.cpp -o chat -lboost_system -lboost_thread -pthread
 
-chat: chat.o 
-	clang++ --std=c++11 chat.o -o chat -lboost_system -lboost_thread -pthread
-
-chat.o: server.hpp server.tpp connection.hpp connection.tpp connection_manager.hpp task_chat.hpp
-	clang++ --std=c++11 -g -c chat.cpp -o chat.o
+echo: server.hpp server.tpp connection.hpp connection.tpp connection_manager.hpp task_echo.hpp
+	clang++ --std=c++11 -g echo.cpp -o echo -lboost_system -lboost_thread -pthread
 
 .PHONY: clean
 clean:
-	rm *.o client chat
+	rm *.o client chat echo
 
