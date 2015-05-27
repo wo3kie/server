@@ -7,36 +7,30 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "./task_chat.hpp"
+#include "./iconnection.hpp"
 
 namespace asio = boost::asio;
 namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
 namespace sys = boost::system;
 
-class ConnectionManager;
+template< typename TTask >
 class Server;
 
+template< typename TTask >
 class Connection
-    : public boost::enable_shared_from_this< Connection >
+    : public IConnection
+    , public boost::enable_shared_from_this< Connection< TTask > >
 {
 public:
 
-    typedef boost::shared_ptr< Connection > ConnectionPtr;
+    typedef boost::shared_ptr< Connection< TTask > > ConnectionPtr;
 
 public:
 
-    enum class Action
-    {
-        Read,
-        ReadError,
-        Process
-    };
-
     Connection( 
         asio::io_service & ioService,
-        ConnectionManager & connectionManager,
-        Server & server
+        Server< TTask > & server
     );
 
     ip::tcp::socket & socket();
@@ -46,7 +40,7 @@ public:
     void stop();
 
     void start(
-        Action const action = TaskChat< Connection >::start()
+        Action const action
     );
 
 public: // api
@@ -86,15 +80,7 @@ public: // api
 
     void doNothing(
         sys::error_code const & errorCode
-    )
-    {
-        if( errorCode )
-        {
-            std::cerr << "Do Nothing Error: " << errorCode.message() << std::endl;
-
-            disconnect();
-        }
-    }
+    );
 
 private:
 
@@ -111,17 +97,15 @@ private:
 
     ip::tcp::socket m_socket;
     asio::io_service::strand m_strand;
-    Server & m_server;
+    Server< TTask > & m_server;
 
-    TaskChat< Connection > m_task;
+    TTask m_task;
 
     std::string m_id;
 
     enum { m_maxSize = 1024 };
     char m_buffer[ m_maxSize ];
 };
-
-typedef Connection::ConnectionPtr ConnectionPtr;
 
 #endif
 

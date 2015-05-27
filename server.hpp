@@ -10,8 +10,13 @@
 #include "./connection.hpp"
 #include "./connection_manager.hpp"
 
+template< typename TTask >
 class Server
 {
+public:
+
+    typedef boost::shared_ptr< Connection< TTask > > ConnectionPtr;
+
 public:
 
     Server(
@@ -55,8 +60,11 @@ private:
     asio::signal_set m_signals;
 
     ConnectionPtr m_newConnection;
-    ConnectionManager m_connectionManager;
+    ConnectionManager< TTask > m_connectionManager;
 };
+
+#include "./server.tpp"
+#include "./connection.tpp"
 
 #endif
 

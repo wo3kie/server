@@ -17,7 +17,8 @@ namespace sys = boost::system;
 #include "./connection.hpp"
 #include "./server.hpp"
 
-Server::Server(
+template< typename TTask >
+Server< TTask >::Server(
     std::string const & port
 )
     : m_strand( m_ioService )
@@ -29,7 +30,7 @@ Server::Server(
     m_signals.add( SIGQUIT );
 
     m_signals.async_wait(
-        boost::bind( & Server::stop, this )
+        boost::bind( & Server< TTask >::stop, this )
     );
 
     ip::tcp::resolver resolver( m_ioService );
@@ -44,7 +45,8 @@ Server::Server(
     startAccept();
 }
 
-void Server::run()
+template< typename TTask >
+void Server< TTask >::run()
 {
     boost::thread_group threadGroup; 
 
@@ -61,7 +63,8 @@ void Server::run()
     threadGroup.join_all();
 }
 
-void Server::broadcast(
+template< typename TTask >
+void Server< TTask >::broadcast(
     ConnectionPtr const & sender,
     char const * const message,
     std::size_t const size
@@ -75,7 +78,7 @@ void Server::broadcast(
     auto sendMessage = [ this, & sender, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
         auto const continuation = boost::bind(
-            & Connection::doNothing,
+            & Connection< TTask >::doNothing,
             sender,
             placeholders::error
         );
@@ -90,7 +93,8 @@ void Server::broadcast(
     m_connectionManager.forEachIf( skipSender, sendMessage );
 }
 
-void Server::unicast(
+template< typename TTask >
+void Server< TTask >::unicast(
     ConnectionPtr const & sender,
     std::string const & receiverId,
     char const * const message,
@@ -105,7 +109,7 @@ void Server::unicast(
     auto sendMessage = [ this, & sender, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
         auto const continuation = boost::bind(
-            & Connection::doNothing,
+            & Connection< TTask >::doNothing,
             sender,
             placeholders::error
         );
@@ -120,19 +124,21 @@ void Server::unicast(
     m_connectionManager.forEachIf( matchReceiver, sendMessage );
 }
 
-void Server::disconnect(
+template< typename TTask >
+void Server< TTask >::disconnect(
     ConnectionPtr const & sender
 )
 {
     m_connectionManager.remove( sender );
 }
 
-void Server::startAccept()
+template< typename TTask >
+void Server< TTask >::startAccept()
 {
-    m_newConnection.reset( new Connection( m_ioService, m_connectionManager, *this ) );
+    m_newConnection.reset( new Connection< TTask >( m_ioService, *this ) );
 
     auto const onAccepted = boost::bind(
-        & Server::onAccepted,
+        & Server< TTask >::onAccepted,
         this,
         placeholders::error
     );
@@ -143,7 +149,8 @@ void Server::startAccept()
     );
 }
 
-void Server::onAccepted(
+template< typename TTask >
+void Server< TTask >::onAccepted(
     sys::error_code const & errorCode
 )
 {
@@ -151,13 +158,14 @@ void Server::onAccepted(
     {
         m_connectionManager.add( m_newConnection );
 
-        m_newConnection->start();
+        m_newConnection->start( TTask::start() );
     }
 
     startAccept();
 }
 
-void Server::stop()
+template< typename TTask >
+void Server< TTask >::stop()
 {
     m_ioService.stop();
 }

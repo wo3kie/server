@@ -1,10 +1,10 @@
 #include "./connection.hpp"
 #include "./server.hpp"
 
-Connection::Connection( 
+template< typename TTask >
+Connection< TTask >::Connection( 
     asio::io_service & ioService,
-    ConnectionManager & connectionManager,
-    Server & server
+    Server< TTask > & server
 )
     : m_socket( ioService )
     , m_strand( ioService )
@@ -13,25 +13,29 @@ Connection::Connection(
 {
 }
 
-ip::tcp::socket & Connection::socket()
+template< typename TTask >
+ip::tcp::socket & Connection< TTask >::socket()
 {
     return m_socket;
 }
 
-void Connection::setId(
+template< typename TTask >
+void Connection< TTask >::setId(
     std::string const & id
 )
 {
     m_id = id;
 }
 
-std::string const & Connection::getId() const 
+template< typename TTask >
+std::string const & Connection< TTask >::getId() const 
 {
     return m_id;
 }
 
-void Connection::start(
-    Connection::Action const action
+template< typename TTask >
+void Connection< TTask >::start(
+    IConnection::Action const action
 )
 {
     switch( action )
@@ -53,8 +57,8 @@ void Connection::start(
         case Action::Read:
         {
             auto const parse = boost::bind(
-                & Connection::parse,
-                shared_from_this(),
+                & Connection< TTask >::parse,
+                Connection< TTask >::shared_from_this(),
                 placeholders::error,
                 placeholders::bytes_transferred()
             );
@@ -68,22 +72,27 @@ void Connection::start(
         }
     }
 }
-void Connection::read()
+
+template< typename TTask >
+void Connection< TTask >::read()
 {
     start( Action::Read );
 }
 
-void Connection::parseError()
+template< typename TTask >
+void Connection< TTask >::parseError()
 {
     m_task.parseError();
 }
 
-void Connection::process()
+template< typename TTask >
+void Connection< TTask >::process()
 {
     m_task.process();
 }
 
-void Connection::parse(
+template< typename TTask >
+void Connection< TTask >::parse(
     sys::error_code const & errorCode,
     std::size_t const bytesTransferred
 )
@@ -100,7 +109,8 @@ void Connection::parse(
     }
 }
 
-void Connection::startAgain(
+template< typename TTask >
+void Connection< TTask >::startAgain(
     sys::error_code const & errorCode
 )
 {
@@ -116,14 +126,15 @@ void Connection::startAgain(
     }
 }
 
-void Connection::response(
+template< typename TTask >
+void Connection< TTask >::response(
     char const * const message,
     std::size_t const size
 )
 {
     auto const continuation = boost::bind(
-        & Connection::doNothing,
-        shared_from_this(),
+        & Connection< TTask >::doNothing,
+        Connection< TTask >::shared_from_this(),
         placeholders::error
     );
 
@@ -134,7 +145,8 @@ void Connection::response(
     );
 }
 
-void Connection::log(
+template< typename TTask >
+void Connection< TTask >::log(
     char const * const message,
     std::size_t const size
 )
@@ -144,31 +156,48 @@ void Connection::log(
     std::cout << std::endl;
 }
 
-void Connection::stop()
+template< typename TTask >
+void Connection< TTask >::doNothing(
+    sys::error_code const & errorCode
+)
+{
+    if( errorCode )
+    {
+        std::cerr << "Do Nothing Error: " << errorCode.message() << std::endl;
+
+        disconnect();
+    }
+}
+
+template< typename TTask >
+void Connection< TTask >::stop()
 {
     char const * const message = "Goodbye.";
     response( message, strlen( message ) );
 }
 
-void Connection::broadcast(
+template< typename TTask >
+void Connection< TTask >::broadcast(
     char const * const message,
     std::size_t const size
 )
 {
-    m_server.broadcast( shared_from_this(), message, size );
+    m_server.broadcast( Connection< TTask >::shared_from_this(), message, size );
 }
 
-void Connection::unicast(
+template< typename TTask >
+void Connection< TTask >::unicast(
     std::string const & receiverId,
     char const * const message,
     std::size_t const size
 )
 {
-    m_server.unicast( shared_from_this(), receiverId, message, size );
+    m_server.unicast( Connection< TTask >::shared_from_this(), receiverId, message, size );
 }
 
-void Connection::disconnect()
+template< typename TTask >
+void Connection< TTask >::disconnect()
 {
-    m_server.disconnect( shared_from_this() );
+    m_server.disconnect( Connection< TTask >::shared_from_this() );
 }
 
