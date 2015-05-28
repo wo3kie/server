@@ -1,0 +1,144 @@
+Creating a new server is simple. All you need to do is
+
+- include 'server.hpp' file
+
+    #include "./server.hpp"
+
+- create your own task class
+
+- instantiate 'Server' class with your task class,
+  create a 'Server' object passing port number as a costructor argument,
+  and call 'run' method on it
+
+    Server< MyTask >( "12345" ).run()
+
+
+Class MyTask has to provide such interface
+
+    class MyTask
+    {
+    public:
+        MyTask( IConnection * connection );
+
+        static IConnection::Action start();
+
+        IConnection::Action parse(
+            char const * const buffer,
+            std::size_t const bytesTransferred
+        );  
+
+        void parseError();
+
+        void process();
+
+    private:
+        IConnection * m_connection;
+    };
+
+Constructor 'MyTask::MyTask' accepts 'IConnection' pointer as a argument.
+You can use 'IConnection' to communicate yourself with the world. It
+provides such a function like 'read', 'response', 'broadcast' and much more.
+
+'MyTask::start' says which will be the first action after a new connection is
+created. You may use any of them
+- 'IConnection::Action::Read', if you want to start with reading. Good in most
+  cases. First 'MyTask::parse' function will be called.
+
+- 'IConnection::Action::Process', if you do not want to read anything but write
+  something immidiately. A good example here may be day_time server. First
+  'MyTask::process' function will be called.
+
+- 'IConnection::Action::ReadError', it is not forbidded but makes no sense as
+  an initial action. First 'MyTask::parseError' function will be called.
+
+'MyTask::parse' function is called everytime server has read some data. This
+is a good place for reading and parsing your request.
+- If during a processing you found that you expect more data return
+  'IConnection::Action::Read'. The function 'MyTask::parse' will be called
+   again with a new chunk of data.
+
+- If you find your request incorrect please return 'IConnection::Action::ReadError'.
+  Server will call 'MyTask::parseError' function.
+
+- If you read all incoming data correctly and you want to process them somehow
+  return 'IConnection::Action::process'. As a result 'MyTask::process' function
+  will be called.
+
+So now we know how to read data from a connection. What about other stuff. What
+about writing response back? In order to do this you have to use 'IConnection'
+interface. It has many useful functions.
+
+    class IConnection
+    {
+    public:
+        virtual void disconnect() = 0;
+
+        virtual void setId( std::string const & id ) = 0;
+
+        virtual std::string const & getId() const = 0;
+
+        virtual void read() = 0;
+
+        virtual void parseError() = 0;
+
+        virtual void process() = 0;
+
+        virtual void response(
+            char const * const message,
+            std::size_t const size
+        ) = 0;
+
+        virtual void unicast(
+            std::string const & receiverId,
+            char const * const message,
+            std::size_t const size
+        ) = 0;
+
+        virtual void broadcast(
+            char const * const message,
+            std::size_t const size
+        ) = 0;
+
+        virtual void log(
+            char const * const message,
+            std::size_t const size 
+        ) = 0;
+
+        virtual void doNothing(
+            sys::error_code const & errorCode
+        ) = 0;
+    };
+
+'IConnection::disconnect' closes a connection. Any further reading or writing is not
+possible anymore.
+
+'IConnection::setId' lets you set ID for a connection. You may need ID to send a message
+to one particular connection. Use together with 'IConnection::unicast' for it.
+
+'IConnction::getId' returns ID for a connection.
+
+'IConnction::read' call it everytime you want to read more data from the connection. As
+a result 'MyTask::parse' function will be called with a new chunk of data.
+
+'IConnction::parseError' triggers 'MyTask::parseError' function call.
+
+'IConnction::process' triggers 'MyTask::process' function call.
+
+'IConnction::response' sends data to a receiver.
+
+'IConnction::unicast' sends data to one particular connection. First that connection
+has to have ID. Use together with 'IConnction::setId' function.
+
+'IConnction::broadcast' sends data to every other connection.
+
+'IConnction::log' prints message in server's log on standard output.
+
+'IConnection::doNothing' is an auxiliary function. It is designed to be used as a
+callback continuation for a async operation. It means that after async operation
+has been completed should not be continued.
+
+Please refer to examples to see how to use it in practice.
+- echo.cpp, task_echo.hpp
+- day_time.cpp, task_day_time.hpp
+- chat.cpp, task_chat.hpp
+
