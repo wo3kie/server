@@ -30,6 +30,6 @@ files as example of different styles of servers
 For more information check tutorial.txt file.
 
 ## tpp file extension in vim
-Insert line below in ~/.vimrc  
+Insert line below into ~/.vimrc  
 `autocmd BufNewFile,BufReadPost *.ino,*.pde set filetype=cpp`
 
