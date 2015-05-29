@@ -11,9 +11,8 @@ namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
 namespace sys = boost::system;
 
-class IConnection
+struct IConnection
 {
-public:
 
     enum class Action
     {
@@ -22,17 +21,11 @@ public:
         Process
     };
 
-    virtual ip::tcp::socket & socket() = 0;
-
     virtual void disconnect() = 0;
-
-    virtual void stop() = 0;
 
     virtual void start(
         Action const action
     ) = 0;
-
-public: // api
 
     virtual void setId(
         std::string const & id
@@ -41,10 +34,6 @@ public: // api
     virtual std::string const & getId() const = 0;
 
     virtual void read() = 0;
-
-    virtual void parseError() = 0;
-
-    virtual void process() = 0;
 
     virtual void response(
         char const * const message,
@@ -65,10 +54,6 @@ public: // api
     virtual void log(
         char const * const message,
         std::size_t const size 
-    ) = 0;
-
-    virtual void doNothing(
-        sys::error_code const & errorCode
     ) = 0;
 };
 

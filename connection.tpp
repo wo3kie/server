@@ -7,7 +7,6 @@ Connection< TTask >::Connection(
     Server< TTask > & server
 )
     : m_socket( ioService )
-    , m_strand( ioService )
     , m_server( server )
     , m_task( this )
 {
@@ -65,7 +64,7 @@ void Connection< TTask >::start(
 
             m_socket.async_read_some(
                 asio::buffer( m_buffer, m_maxSize ),
-                m_strand.wrap( parse )
+                parse
             );
 
             break;

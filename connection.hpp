@@ -9,11 +9,6 @@
 
 #include "./iconnection.hpp"
 
-namespace asio = boost::asio;
-namespace ip = asio::ip;
-namespace placeholders = asio::placeholders;
-namespace sys = boost::system;
-
 template< typename TTask >
 class Server;
 
@@ -35,52 +30,52 @@ public:
 
     ip::tcp::socket & socket();
 
-    void disconnect();
-
-    void stop();
-
     void start(
         Action const action
     );
 
-public: // api
-
-    void setId(
-        std::string const & id
-    );
-
-    std::string const & getId() const ;
-
-    void read();
+    void stop();
 
     void parseError();
 
     void process();
 
+    void doNothing(
+        sys::error_code const & errorCode
+    );
+
+    void disconnect();
+
+public: // api
+
+    void setId(
+        std::string const & id
+    ) override;
+
+    std::string const & getId() const override;
+
+    void read() override;
+
     void response(
         char const * const message,
         std::size_t const size
-    );
+    ) override;
 
     void unicast(
         std::string const & receiverId,
         char const * const message,
         std::size_t const size
-    );
+    ) override;
 
     void broadcast(
         char const * const message,
         std::size_t const size
-    );
+    ) override;
 
     void log(
         char const * const message,
         std::size_t const size 
-    );
-
-    void doNothing(
-        sys::error_code const & errorCode
-    );
+    ) override;
 
 private:
 
@@ -96,7 +91,6 @@ private:
 private:
 
     ip::tcp::socket m_socket;
-    asio::io_service::strand m_strand;
     Server< TTask > & m_server;
 
     TTask m_task;

@@ -82,10 +82,6 @@ interface. It has many useful functions.
 
         virtual void read() = 0;
 
-        virtual void parseError() = 0;
-
-        virtual void process() = 0;
-
         virtual void response(
             char const * const message,
             std::size_t const size
@@ -107,9 +103,6 @@ interface. It has many useful functions.
             std::size_t const size 
         ) = 0;
 
-        virtual void doNothing(
-            sys::error_code const & errorCode
-        ) = 0;
     };
 
 'IConnection::disconnect' closes a connection. Any further reading or writing is not
@@ -123,10 +116,6 @@ to one particular connection. Use together with 'IConnection::unicast'.
 'IConnction::read' call it every time you want to read more data from the connection.
 As a result 'MyTask::parse' function will be called with a new chunk of data.
 
-'IConnction::parseError' triggers 'MyTask::parseError' function call.
-
-'IConnction::process' triggers 'MyTask::process' function call.
-
 'IConnction::response' sends data to a receiver.
 
 'IConnction::unicast' sends data to one particular connection. First that connection
@@ -135,10 +124,6 @@ has to have ID set. Use together with 'IConnction::setId' function.
 'IConnction::broadcast' sends data to every other connection.
 
 'IConnction::log' prints message in server's log on standard output.
-
-'IConnection::doNothing' is an auxiliary function. It is designed to be used as a
-callback continuation for a async operation. It means that after async operation
-has been completed nothing more is expected to happen.
 
 Please refer to examples to see how to use it in practice.
 - echo.cpp, task_echo.hpp

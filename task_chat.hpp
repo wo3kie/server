@@ -43,7 +43,7 @@ typename IConnection::Action TaskChat::parse(
     char command, space, cr, lf;
     iss >> command;
 
-    if( command == 'g' )
+    if( command == 'h' )
     {
         std::string id;
         iss >> id;
@@ -62,7 +62,7 @@ typename IConnection::Action TaskChat::parse(
         m_connection->broadcast( message.c_str(), message.size() );
         m_connection->read();
     }
-    else if( command == 's' )
+    else if( command == 'u' )
     {
         std::string id;
         std::string message;
