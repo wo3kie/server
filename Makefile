@@ -1,19 +1,33 @@
+CXX=clang++
+CXXFLAGS=--std=c++11
+LIBS=-lboost_system -lboost_thread -pthread
 
-all: client chat echo day_time
+SRCS=$(shell ls *.cpp)
+OBJS=$(subst .cpp,.o,$(SRCS))
+APPS=$(subst .cpp,,$(SRCS))
+
+all: depend apps
+	
+depend: $(SRCS)
+	$(CXX) -MM $^ >> .makefile.dep
+
+apps: $(APPS)
 
 client: client.cpp
-	clang++ --std=c++11 -g client.cpp -o client -lboost_system -lboost_thread -pthread
+	$(CXX) $(CXXFLAGS) $(LIBS) $< -o $@
 
-chat: server.hpp server.tpp connection.hpp connection.tpp connection_manager.hpp task_chat.hpp
-	clang++ --std=c++11 -g chat.cpp -o chat -lboost_system -lboost_thread -pthread
+chat: chat.cpp
+	$(CXX) $(CXXFLAGS) $(LIBS) $< -o $@
 
-echo: server.hpp server.tpp connection.hpp connection.tpp connection_manager.hpp task_echo.hpp
-	clang++ --std=c++11 -g echo.cpp -o echo -lboost_system -lboost_thread -pthread
+echo: echo.cpp
+	$(CXX) $(CXXFLAGS) $(LIBS) $< -o $@
 
-day_time: server.hpp server.tpp connection.hpp connection.tpp connection_manager.hpp task_day_time.hpp
-	clang++ --std=c++11 -g day_time.cpp -o day_time -lboost_system -lboost_thread -pthread
+day_time: day_time.cpp
+	$(CXX) $(CXXFLAGS) $(LIBS) $< -o $@
 
 .PHONY: clean
 clean:
-	rm *.o client chat echo day_time
+	rm -f *.o .makefile.dep $(APPS)
+
+#include .makefile.dep
 
