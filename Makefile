@@ -1,5 +1,5 @@
 CXX=clang++
-CXXFLAGS=--std=c++11
+CXXFLAGS=--std=c++11 -g
 LIBS=-lboost_system -lboost_thread -pthread
 
 SRCS=$(shell ls *.cpp)
@@ -9,7 +9,7 @@ APPS=$(subst .cpp,,$(SRCS))
 all: depend apps
 	
 depend: $(SRCS)
-	$(CXX) -MM $^ >> .makefile.dep
+	$(CXX) -MM $^ > .makefile.dep
 
 apps: $(APPS)
 
