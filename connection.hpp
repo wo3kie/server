@@ -4,6 +4,11 @@
 #include <string>
 
 #include <boost/asio.hpp>
+
+#ifdef SERVER_SSL
+#include <boost/asio/ssl.hpp>
+#endif
+
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -28,9 +33,18 @@ public:
         Server< TTask > & server
     );
 
-    ip::tcp::socket & socket();
+#ifdef SERVER_SSL
+    ssl::stream< asio::ip::tcp::socket > &
+#else
+    ip::tcp::socket &
+#endif
+    socket();
 
     void start(
+        Action const action
+    );
+
+    void restart(
         Action const action
     );
 
@@ -84,15 +98,20 @@ private:
         std::size_t const bytesTransferred
     );
 
-    void startAgain(
-        sys::error_code const & errorCode
+    void restartAgain(
+        sys::error_code const & errorCode,
+        IConnection::Action const action
     );
 
 private:
 
+#ifdef SERVER_SSL
+    ssl::stream< ip::tcp::socket > m_socket;
+#else
     ip::tcp::socket m_socket;
-    Server< TTask > & m_server;
+#endif
 
+    Server< TTask > & m_server;
     TTask m_task;
 
     std::string m_id;

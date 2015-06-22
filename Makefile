@@ -2,6 +2,11 @@ CXX=clang++
 CXXFLAGS=--std=c++11 -g
 LIBS=-lboost_system -lboost_thread -pthread
 
+ifeq ($(SSL), 1)
+CXXFLAGS += -DSERVER_SSL
+LIBS += -lssl -lcrypto
+endif
+
 SRCS=$(shell ls *.cpp)
 OBJS=$(subst .cpp,.o,$(SRCS))
 APPS=$(subst .cpp,,$(SRCS))

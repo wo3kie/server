@@ -24,6 +24,11 @@ Server< TTask >::Server(
     : m_strand( m_ioService )
     , m_acceptor( m_ioService )
     , m_signals( m_ioService )
+
+#ifdef SERVER_SSL
+    , m_sslContext( ssl::context::sslv23 )
+#endif
+
 {
     m_signals.add( SIGINT );
     m_signals.add( SIGTERM );
@@ -32,6 +37,28 @@ Server< TTask >::Server(
     m_signals.async_wait(
         boost::bind( & Server< TTask >::stop, this )
     );
+
+#ifdef SERVER_SSL
+    m_sslContext.set_options(
+        ssl::context::default_workarounds
+        | ssl::context::no_sslv2
+        | ssl::context::single_dh_use
+    );
+
+    auto const passwordCallback = [](
+        std::size_t size,
+        std::size_t purpose
+    )
+    {
+        return std::string( "test" );
+    };
+
+    m_sslContext.set_password_callback( passwordCallback );
+
+    m_sslContext.use_certificate_chain_file( "server.pem" );
+    m_sslContext.use_private_key_file( "server.pem", ssl::context::pem );
+    m_sslContext.use_tmp_dh_file( "dh512.pem" );
+#endif
 
     ip::tcp::resolver resolver( m_ioService );
     ip::tcp::resolver::query query( "127.0.0.1", port );
@@ -142,9 +169,13 @@ void Server< TTask >::startAccept()
         this,
         placeholders::error
     );
-
+   
     m_acceptor.async_accept(
+#ifdef SERVER_SSL
+        m_newConnection->socket().lowest_layer(),
+#else
         m_newConnection->socket(),
+#endif
         onAccepted
     );
 }

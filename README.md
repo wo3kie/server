@@ -13,9 +13,12 @@ For license please refer to LICENSE file.
 C++11
 g++ / clang++
 boost
+OpenSSL (optionally)
 
 ## how to build it
-make
+make  
+or  
+make SSL=1
 
 ## how to run it
 Start any server you wish  

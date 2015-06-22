@@ -9,6 +9,11 @@
 namespace asio = boost::asio;
 namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
+
+#ifdef SERVER_SSL
+namespace ssl = asio::ssl;
+#endif
+
 namespace sys = boost::system;
 
 struct IConnection

@@ -42,6 +42,13 @@ public:
         ConnectionPtr const & sender
     );
 
+#ifdef SERVER_SSL
+    ssl::context & getSSLContext()
+    {
+        return m_sslContext;
+    }
+#endif
+
 private:
 
     void startAccept();
@@ -58,6 +65,10 @@ private:
     asio::io_service::strand m_strand;
     asio::ip::tcp::acceptor m_acceptor;
     asio::signal_set m_signals;
+
+#ifdef SERVER_SSL
+    ssl::context m_sslContext;
+#endif
 
     ConnectionPtr m_newConnection;
     ConnectionManager< TTask > m_connectionManager;

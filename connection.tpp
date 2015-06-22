@@ -6,14 +6,26 @@ Connection< TTask >::Connection(
     asio::io_service & ioService,
     Server< TTask > & server
 )
+
+#ifdef SERVER_SSL
+    : m_socket( ioService, server.getSSLContext() )
+#else
     : m_socket( ioService )
+#endif
+
     , m_server( server )
     , m_task( this )
+
 {
 }
 
 template< typename TTask >
-ip::tcp::socket & Connection< TTask >::socket()
+#ifdef SERVER_SSL
+ssl::stream< asio::ip::tcp::socket > &
+#else
+ip::tcp::socket &
+#endif
+Connection< TTask >::socket()
 {
     return m_socket;
 }
@@ -34,6 +46,30 @@ std::string const & Connection< TTask >::getId() const
 
 template< typename TTask >
 void Connection< TTask >::start(
+    IConnection::Action const action
+)
+{
+
+#ifdef SERVER_SSL
+    auto const restart = boost::bind(
+        & Connection< TTask >::restartAgain,
+        Connection< TTask >::shared_from_this(),
+        placeholders::error,
+        action
+    );
+
+    m_socket.async_handshake(
+        ssl::stream_base::server,
+        restart
+    );
+#else
+    restart( action );
+#endif
+
+}
+
+template< typename TTask >
+void Connection< TTask >::restart(
     IConnection::Action const action
 )
 {
@@ -75,7 +111,7 @@ void Connection< TTask >::start(
 template< typename TTask >
 void Connection< TTask >::read()
 {
-    start( Action::Read );
+    restart( Action::Read );
 }
 
 template< typename TTask >
@@ -104,24 +140,25 @@ void Connection< TTask >::parse(
     }
     else
     {
-        start( m_task.parse( m_buffer, bytesTransferred ) );
+        restart( m_task.parse( m_buffer, bytesTransferred ) );
     }
 }
 
 template< typename TTask >
-void Connection< TTask >::startAgain(
-    sys::error_code const & errorCode
+void Connection< TTask >::restartAgain(
+    sys::error_code const & errorCode,
+    IConnection::Action const action
 )
 {
     if( errorCode )
     {
-        std::cerr << "Start Again Error: " << errorCode.message() << std::endl;
+        std::cerr << "Restart Again Error: " << errorCode.message() << std::endl;
 
         disconnect();
     }
     else
     {
-        start();
+        restart( action );
     }
 }
 
