@@ -10,9 +10,9 @@ https://github.com/wo3kie/server
 For license please refer to LICENSE file.
 
 ## requirements
-C++11
-g++ / clang++
-boost
+C++11  
+g++ / clang++  
+boost  
 OpenSSL (optionally)
 
 ## how to build it
