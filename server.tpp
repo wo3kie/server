@@ -56,8 +56,8 @@ Server< TTask >::Server(
     m_sslContext.set_password_callback( passwordCallback );
 
     m_sslContext.use_certificate_chain_file( "server.pem" );
-    m_sslContext.use_private_key_file( "server.pem", ssl::context::pem );
-    m_sslContext.use_tmp_dh_file( "dh512.pem" );
+    m_sslContext.use_private_key_file( "server-key.pem", ssl::context::pem );
+    //m_sslContext.use_tmp_dh_file( "dh512.pem" );
 #endif
 
     ip::tcp::resolver resolver( m_ioService );
