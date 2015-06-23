@@ -22,12 +22,12 @@ make SSL=1
 
 ## how to run it
 Start any server you wish  
-'./echo port'  
-'./day_time port'  
-'./chat port'  
+'./echo *port*'  
+'./day_time *port*'  
+'./chat *port*'  
 and client  
-'./client port'.  
-All of them require port number a an argument.
+'./client *port*'  
+All of them require port number as an argument.
 
 ## examples
 Please find  
