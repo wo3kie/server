@@ -18,7 +18,7 @@ depend: $(SRCS)
 
 apps: $(APPS)
 
-client: client.cpp
+client_line: client_line.cpp
 	$(CXX) $(CXXFLAGS) $(LIBS) $< -o $@
 
 chat: chat.cpp
