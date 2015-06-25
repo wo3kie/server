@@ -126,7 +126,7 @@ has to have ID set. Use together with 'IConnction::setId' function.
 'IConnction::log' prints message in server's log on standard output.
 
 Please refer to examples to see how to use it in practice.
-- echo.cpp, task_echo.hpp
-- day_time.cpp, task_day_time.hpp
-- chat.cpp, task_chat.hpp
+- echo.cpp, server_echo.hpp
+- day_time.cpp, server_day_time.hpp
+- chat.cpp, server_chat.hpp
 

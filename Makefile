@@ -11,6 +11,8 @@ SRCS=$(shell ls *.cpp)
 OBJS=$(subst .cpp,.o,$(SRCS))
 APPS=$(subst .cpp,,$(SRCS))
 
+all: depend apps
+
 depend: $(SRCS)
 	$(CXX) -MM $^ > .makefile.dep
 
