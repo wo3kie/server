@@ -24,7 +24,7 @@ echo: echo.o
 day_time: day_time.o
 
 %.o: %.cpp %.hpp %.tpp
-	$(CXX) $(CXXFLAGS) $* -c -o $@
+	$(CXX) $(CXXFLAGS) $< -c -o $@
 
 -include .makefile.dep
 
