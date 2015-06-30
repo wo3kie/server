@@ -1,34 +1,35 @@
+CC=clang++
 CXX=clang++
 CXXFLAGS=--std=c++11 -g
-LIBS=-lboost_system -lboost_thread -pthread
+LDLIBS=-lboost_system -lboost_thread -pthread
 
 ifeq ($(SSL), 1)
 CXXFLAGS += -DSERVER_SSL
-LIBS += -lssl -lcrypto
+LDLIBS += -lssl -lcrypto
 endif
 
 SRCS=$(shell ls *.cpp)
+HDRS=$(shell ls *.hpp *.tpp)
 OBJS=$(subst .cpp,.o,$(SRCS))
 APPS=$(subst .cpp,,$(SRCS))
 
-all: depend apps
+all: $(APPS)
 
-depend: $(SRCS)
+client_console: client_console.o
+
+chat: chat.o
+
+echo: echo.o
+
+day_time: day_time.o
+
+%.o: %.cpp %.hpp %.tpp
+	$(CXX) $(CXXFLAGS) $* -c -o $@
+
+-include .makefile.dep
+
+depend: $(SRCS) $(HDRS)
 	$(CXX) -MM $^ > .makefile.dep
-
-apps: $(APPS)
-
-client_line: client_line.cpp
-	$(CXX) $(CXXFLAGS) $(LIBS) $< -o $@
-
-chat: chat.cpp
-	$(CXX) $(CXXFLAGS) $(LIBS) $< -o $@
-
-echo: echo.cpp
-	$(CXX) $(CXXFLAGS) $(LIBS) $< -o $@
-
-day_time: day_time.cpp
-	$(CXX) $(CXXFLAGS) $(LIBS) $< -o $@
 
 pem:
 	openssl genrsa 2048 > ca-key.pem
@@ -40,7 +41,7 @@ pem:
 
 .PHONY: clean
 clean:
-	rm -f *.o .makefile.dep $(APPS)
+	rm -f *.o $(APPS)
 
 #include .makefile.dep
 

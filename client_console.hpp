@@ -1,5 +1,5 @@
-#ifndef _CLIENT_LINE_
-#define _CLIENT_LINE_
+#ifndef _CLIENT_CONSOLE_
+#define _CLIENT_CONSOLE_
 
 #include "./client.hpp"
 
