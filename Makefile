@@ -15,22 +15,10 @@ APPS=$(subst .cpp,,$(SRCS))
 
 all: $(APPS)
 
-client_console: client_console.o
-
-chat: chat.o
-
-echo: echo.o
-
-day_time: day_time.o
-
-%.o: %.cpp %.hpp %.tpp
-	$(CXX) $(CXXFLAGS) $< -c -o $@
-
--include .makefile.dep
-
 depend: $(SRCS) $(HDRS)
 	$(CXX) -MM $^ > .makefile.dep
 
+.PHONY: pem
 pem:
 	openssl genrsa 2048 > ca-key.pem
 	openssl req -new -x509 -nodes -days 365 -key ca-key.pem -out ca.pem
@@ -43,5 +31,5 @@ pem:
 clean:
 	rm -f *.o $(APPS)
 
-#include .makefile.dep
+-include .makefile.dep
 
