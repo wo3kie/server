@@ -17,8 +17,11 @@ namespace sys = boost::system;
 #include "./connection.hpp"
 #include "./server.hpp"
 
-template< typename TTask >
-Server< TTask >::Server(
+template<
+	typename TTask,
+	typename TState
+>
+Server< TTask, TState >::Server(
     std::string const & port
 )
     : m_strand( m_ioService )
@@ -35,30 +38,8 @@ Server< TTask >::Server(
     m_signals.add( SIGQUIT );
 
     m_signals.async_wait(
-        boost::bind( & Server< TTask >::stop, this )
+        boost::bind( & Server< TTask, TState >::stop, this )
     );
-
-#ifdef SERVER_SSL
-    m_sslContext.set_options(
-        ssl::context::default_workarounds
-        | ssl::context::no_sslv2
-        | ssl::context::single_dh_use
-    );
-
-    auto const passwordCallback = [](
-        std::size_t size,
-        std::size_t purpose
-    )
-    {
-        return std::string( "test" );
-    };
-
-    m_sslContext.set_password_callback( passwordCallback );
-
-    m_sslContext.use_certificate_chain_file( "server.pem" );
-    m_sslContext.use_private_key_file( "server-key.pem", ssl::context::pem );
-    //m_sslContext.use_tmp_dh_file( "dh512.pem" );
-#endif
 
     ip::tcp::resolver resolver( m_ioService );
     ip::tcp::resolver::query query( "127.0.0.1", port );
@@ -69,12 +50,68 @@ Server< TTask >::Server(
     m_acceptor.bind( endpoint );
     m_acceptor.listen();
 
+#ifdef SERVER_SSL
+    m_sslContext.set_options(
+        ssl::context::default_workarounds
+        | ssl::context::no_sslv2
+        | ssl::context::single_dh_use
+    );
+
+    auto const passwordCallback = [ & ](
+        std::size_t size,
+        std::size_t purpose
+    ) -> std::string
+    {
+        return "test";
+    };
+
+    m_sslContext.set_password_callback( passwordCallback );
+
+    m_sslContext.use_certificate_chain_file( "server.pem" );
+    m_sslContext.use_private_key_file( "server-key.pem", ssl::context::pem );
+#endif
+
     startAccept();
 }
 
-template< typename TTask >
-void Server< TTask >::run()
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::init( int argc, char* argv[] )
 {
+    stateInit( argc, argv );
+}
+
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::destroy()
+{
+    stateDestroy();
+}
+
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::run()
+{
+    run( 0, {} );
+}
+
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::run(
+    int argc,
+    char* argv[]
+)
+{
+    init( argc, argv );
+
     boost::thread_group threadGroup; 
 
     auto const threadBody = boost::bind(
@@ -88,10 +125,15 @@ void Server< TTask >::run()
     }
 
     threadGroup.join_all();
+
+    destroy();
 }
 
-template< typename TTask >
-void Server< TTask >::broadcast(
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::broadcast(
     ConnectionPtr const & sender,
     char const * const message,
     std::size_t const size
@@ -105,7 +147,7 @@ void Server< TTask >::broadcast(
     auto sendMessage = [ this, & sender, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
         auto const continuation = boost::bind(
-            & Connection< TTask >::doNothing,
+            & Connection< TTask, TState >::doNothing,
             sender,
             placeholders::error
         );
@@ -120,8 +162,11 @@ void Server< TTask >::broadcast(
     m_connectionManager.forEachIf( skipSender, sendMessage );
 }
 
-template< typename TTask >
-void Server< TTask >::unicast(
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::unicast(
     ConnectionPtr const & sender,
     std::string const & receiverId,
     char const * const message,
@@ -136,7 +181,7 @@ void Server< TTask >::unicast(
     auto sendMessage = [ this, & sender, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
         auto const continuation = boost::bind(
-            & Connection< TTask >::doNothing,
+            & Connection< TTask, TState >::doNothing,
             sender,
             placeholders::error
         );
@@ -151,21 +196,27 @@ void Server< TTask >::unicast(
     m_connectionManager.forEachIf( matchReceiver, sendMessage );
 }
 
-template< typename TTask >
-void Server< TTask >::disconnect(
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::disconnect(
     ConnectionPtr const & sender
 )
 {
     m_connectionManager.remove( sender );
 }
 
-template< typename TTask >
-void Server< TTask >::startAccept()
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::startAccept()
 {
-    m_newConnection.reset( new Connection< TTask >( m_ioService, *this ) );
+    m_newConnection.reset( new Connection< TTask, TState >( m_ioService, *this ) );
 
     auto const onAccepted = boost::bind(
-        & Server< TTask >::onAccepted,
+        & Server< TTask, TState >::onAccepted,
         this,
         placeholders::error
     );
@@ -180,8 +231,11 @@ void Server< TTask >::startAccept()
     );
 }
 
-template< typename TTask >
-void Server< TTask >::onAccepted(
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::onAccepted(
     sys::error_code const & errorCode
 )
 {
@@ -195,8 +249,11 @@ void Server< TTask >::onAccepted(
     startAccept();
 }
 
-template< typename TTask >
-void Server< TTask >::stop()
+template<
+	typename TTask,
+	typename TState
+>
+void Server< TTask, TState >::stop()
 {
     m_ioService.stop();
 }

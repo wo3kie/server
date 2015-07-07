@@ -10,12 +10,45 @@
 #include "./connection.hpp"
 #include "./connection_manager.hpp"
 
-template< typename TTask >
+template< typename TState >
+struct State
+{
+    void stateInit( int argc, char* argv[] ){ m_state.init( argc, argv ); }
+    void stateDestroy(){ m_state.destroy(); }
+
+    void * getState() { return & m_state; }
+    void const * getState() const { return & m_state; }
+
+private:
+    TState m_state;
+};
+
+template<>
+struct State< void >
+{
+    void stateInit( int argc, char* argv[] ){}
+    void stateDestroy(){}
+
+    void * getState() { return nullptr; }
+    void const * getState() const { return nullptr; }
+};
+
+template<
+    typename TTask,
+    typename TState = void
+>
 class Server
+    : private State< TState >
 {
 public:
+    
+    using State< TState >::stateInit;
+    using State< TState >::stateDestroy;
+    using State< TState >::getState;
 
-    typedef boost::shared_ptr< Connection< TTask > > ConnectionPtr;
+public:
+
+    typedef boost::shared_ptr< Connection< TTask, TState > > ConnectionPtr;
 
 public:
 
@@ -24,6 +57,11 @@ public:
     );
 
     void run();
+
+    void run(
+        int argc,
+        char* argv[]
+    );
 
     void broadcast(
         ConnectionPtr const & sender,
@@ -51,6 +89,9 @@ public:
 
 private:
 
+    void init( int argc, char* argv[] );
+    void destroy();
+
     void startAccept();
 
     void onAccepted(
@@ -71,7 +112,7 @@ private:
 #endif
 
     ConnectionPtr m_newConnection;
-    ConnectionManager< TTask > m_connectionManager;
+    ConnectionManager< TTask, TState > m_connectionManager;
 };
 
 #include "./server.tpp"

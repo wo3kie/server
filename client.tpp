@@ -4,11 +4,10 @@ Task::Task(
     asio::io_service & ioService,
 
 #ifdef SERVER_SSL
-    ssl::stream< ip::tcp::socket > & socket    
+    ssl::stream< ip::tcp::socket > & socket
 #else
     ip::tcp::socket & socket
 #endif
-
 )
     : m_ioService( ioService )
     , m_socket( socket )
@@ -17,23 +16,16 @@ Task::Task(
 
 void Task::run()
 {
-    auto const threadBody = boost::bind(
-        & asio::io_service::run,
-        & m_ioService
-    );
-
-    boost::thread thread( threadBody );
-
     runImpl();
-
-    thread.join();
 }
 
 template< typename TReader, typename TWriter >
 Client< TReader, TWriter >::Client(
     asio::io_service & ioService,
     std::string const & host,
-    std::string const & port
+    std::string const & port,
+    int argc,
+    char* argv[]
 )
     : m_ioService( ioService )
 
@@ -44,19 +36,21 @@ Client< TReader, TWriter >::Client(
     , m_socket( m_ioService )
 #endif
 
-    , m_reader( m_ioService, m_socket )
-    , m_writer( m_ioService, m_socket )
+    , m_reader( m_ioService, m_socket, argc, argv )
+    , m_writer( m_ioService, m_socket, argc, argv )
 {
     ip::tcp::resolver::query query( host, port ); 
 
 #ifdef SERVER_SSL
-    m_ctx.load_verify_file( "ca.pem" );
+    m_ctx.load_verify_file( "./ca.pem" );
 
     m_socket.set_verify_mode( ssl::verify_peer );
     m_socket.set_verify_callback(
         boost::bind( & Client::verifyCertificate, this, _1, _2 )
     );
 #endif
+
+    ip::tcp::resolver resolver( m_ioService );
 
     auto const onResolved = boost::bind(
         & Client::onResolved,
@@ -65,18 +59,29 @@ Client< TReader, TWriter >::Client(
         placeholders::iterator
     );
 
-    ip::tcp::resolver resolver( m_ioService );
     resolver.async_resolve(
         query,
         onResolved
     );
 
-    boost::thread( boost::bind( & TWriter::run, m_writer ) ).join();
+    boost::thread_group threadGroup; 
+
+    auto const threadBody = boost::bind(
+        & asio::io_service::run,
+        & m_ioService
+    );
+
+    for( unsigned i = 0 ; i < 2 ; ++ i )
+    {
+        threadGroup.create_thread( threadBody );
+    }
+
+    threadGroup.join_all();
 }
 
 #ifdef SERVER_SSL
 template< typename TReader, typename TWriter >
-void Client< TReader, TWriter >::verifyCertificate(
+bool Client< TReader, TWriter >::verifyCertificate(
     bool const preverified,
     ssl::verify_context & ctx 
 )
@@ -160,6 +165,7 @@ void Client< TReader, TWriter >::onHandShake(
     else
     {
         m_reader.run();
+        boost::thread( boost::bind( & TWriter::run, m_writer ) ).join();
     }
 }
 

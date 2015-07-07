@@ -9,7 +9,7 @@ int main( int argc, char* argv[] )
     const auto host = "127.0.0.1";
     const auto port = argv[ 1 ];
 
-    Client< Reader, Writer > c( ioService, host, port );
+    Client< Reader, Writer >( ioService, host, port );
 
     return 0;
 }

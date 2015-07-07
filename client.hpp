@@ -28,11 +28,10 @@ struct Task
         asio::io_service & ioService,
 
 #ifdef SERVER_SSL
-        ssl::stream< ip::tcp::socket > & socket    
+        ssl::stream< ip::tcp::socket > & socket
 #else
         ip::tcp::socket & socket
 #endif
-
     );
 
     void run();
@@ -50,7 +49,6 @@ protected:
 #else
     ip::tcp::socket & m_socket;
 #endif
-
 };
 
 template< typename TReader, typename TWriter >
@@ -59,7 +57,9 @@ struct Client
     Client(
         asio::io_service & ioService,
         std::string const & host,
-        std::string const & port
+        std::string const & port,
+        int argc = 0,
+        char* argv[] = {}
     );
 
 private:

@@ -14,23 +14,29 @@
 
 #include "./iconnection.hpp"
 
-template< typename TTask >
+template<
+    typename TTask,
+    typename TState
+>
 class Server;
 
-template< typename TTask >
+template<
+    typename TTask,
+    typename TState
+>
 class Connection
     : public IConnection
-    , public boost::enable_shared_from_this< Connection< TTask > >
+    , public boost::enable_shared_from_this< Connection< TTask, TState > >
 {
 public:
 
-    typedef boost::shared_ptr< Connection< TTask > > ConnectionPtr;
+    typedef boost::shared_ptr< Connection< TTask, TState > > ConnectionPtr;
 
 public:
 
     Connection( 
         asio::io_service & ioService,
-        Server< TTask > & server
+        Server< TTask, TState > & server
     );
 
 #ifdef SERVER_SSL
@@ -91,6 +97,11 @@ public: // api
         std::size_t const size 
     ) override;
 
+    void const * getState() const override
+    {
+        return m_server.getState();
+    }
+
 private:
 
     void parse(
@@ -111,7 +122,7 @@ private:
     ip::tcp::socket m_socket;
 #endif
 
-    Server< TTask > & m_server;
+    Server< TTask, TState > & m_server;
     TTask m_task;
 
     std::string m_id;

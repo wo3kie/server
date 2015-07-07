@@ -60,6 +60,8 @@ struct IConnection
         char const * const message,
         std::size_t const size 
     ) = 0;
+
+    virtual void const * getState() const = 0;
 };
 
 #endif

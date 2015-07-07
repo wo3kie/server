@@ -1,10 +1,13 @@
 #include "./connection.hpp"
 #include "./server.hpp"
 
-template< typename TTask >
-Connection< TTask >::Connection( 
+template<
+	typename TTask,
+	typename TState
+>
+Connection< TTask, TState >::Connection( 
     asio::io_service & ioService,
-    Server< TTask > & server
+    Server< TTask, TState > & server
 )
 
 #ifdef SERVER_SSL
@@ -19,41 +22,53 @@ Connection< TTask >::Connection(
 {
 }
 
-template< typename TTask >
+template<
+	typename TTask,
+	typename TState
+>
 #ifdef SERVER_SSL
 ssl::stream< asio::ip::tcp::socket > &
 #else
 ip::tcp::socket &
 #endif
-Connection< TTask >::socket()
+Connection< TTask, TState >::socket()
 {
     return m_socket;
 }
 
-template< typename TTask >
-void Connection< TTask >::setId(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::setId(
     std::string const & id
 )
 {
     m_id = id;
 }
 
-template< typename TTask >
-std::string const & Connection< TTask >::getId() const 
+template<
+	typename TTask,
+	typename TState
+>
+std::string const & Connection< TTask, TState >::getId() const 
 {
     return m_id;
 }
 
-template< typename TTask >
-void Connection< TTask >::start(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::start(
     IConnection::Action const action
 )
 {
 
 #ifdef SERVER_SSL
     auto const restart = boost::bind(
-        & Connection< TTask >::restartAgain,
-        Connection< TTask >::shared_from_this(),
+        & Connection< TTask, TState >::restartAgain,
+        Connection< TTask, TState >::shared_from_this(),
         placeholders::error,
         action
     );
@@ -68,8 +83,11 @@ void Connection< TTask >::start(
 
 }
 
-template< typename TTask >
-void Connection< TTask >::restart(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::restart(
     IConnection::Action const action
 )
 {
@@ -92,8 +110,8 @@ void Connection< TTask >::restart(
         case Action::Read:
         {
             auto const parse = boost::bind(
-                & Connection< TTask >::parse,
-                Connection< TTask >::shared_from_this(),
+                & Connection< TTask, TState >::parse,
+                Connection< TTask, TState >::shared_from_this(),
                 placeholders::error,
                 placeholders::bytes_transferred()
             );
@@ -108,26 +126,38 @@ void Connection< TTask >::restart(
     }
 }
 
-template< typename TTask >
-void Connection< TTask >::read()
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::read()
 {
     restart( Action::Read );
 }
 
-template< typename TTask >
-void Connection< TTask >::parseError()
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::parseError()
 {
     m_task.parseError();
 }
 
-template< typename TTask >
-void Connection< TTask >::process()
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::process()
 {
     m_task.process();
 }
 
-template< typename TTask >
-void Connection< TTask >::parse(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::parse(
     sys::error_code const & errorCode,
     std::size_t const bytesTransferred
 )
@@ -144,8 +174,11 @@ void Connection< TTask >::parse(
     }
 }
 
-template< typename TTask >
-void Connection< TTask >::restartAgain(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::restartAgain(
     sys::error_code const & errorCode,
     IConnection::Action const action
 )
@@ -162,15 +195,18 @@ void Connection< TTask >::restartAgain(
     }
 }
 
-template< typename TTask >
-void Connection< TTask >::response(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::response(
     char const * const message,
     std::size_t const size
 )
 {
     auto const continuation = boost::bind(
-        & Connection< TTask >::doNothing,
-        Connection< TTask >::shared_from_this(),
+        & Connection< TTask, TState >::doNothing,
+        Connection< TTask, TState >::shared_from_this(),
         placeholders::error
     );
 
@@ -181,8 +217,11 @@ void Connection< TTask >::response(
     );
 }
 
-template< typename TTask >
-void Connection< TTask >::log(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::log(
     char const * const message,
     std::size_t const size
 )
@@ -192,8 +231,11 @@ void Connection< TTask >::log(
     std::cout << std::endl;
 }
 
-template< typename TTask >
-void Connection< TTask >::doNothing(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::doNothing(
     sys::error_code const & errorCode
 )
 {
@@ -205,35 +247,47 @@ void Connection< TTask >::doNothing(
     }
 }
 
-template< typename TTask >
-void Connection< TTask >::stop()
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::stop()
 {
     char const * const message = "Goodbye.";
     response( message, strlen( message ) );
 }
 
-template< typename TTask >
-void Connection< TTask >::broadcast(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::broadcast(
     char const * const message,
     std::size_t const size
 )
 {
-    m_server.broadcast( Connection< TTask >::shared_from_this(), message, size );
+    m_server.broadcast( Connection< TTask, TState >::shared_from_this(), message, size );
 }
 
-template< typename TTask >
-void Connection< TTask >::unicast(
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::unicast(
     std::string const & receiverId,
     char const * const message,
     std::size_t const size
 )
 {
-    m_server.unicast( Connection< TTask >::shared_from_this(), receiverId, message, size );
+    m_server.unicast( Connection< TTask, TState >::shared_from_this(), receiverId, message, size );
 }
 
-template< typename TTask >
-void Connection< TTask >::disconnect()
+template<
+	typename TTask,
+	typename TState
+>
+void Connection< TTask, TState >::disconnect()
 {
-    m_server.disconnect( Connection< TTask >::shared_from_this() );
+    m_server.disconnect( Connection< TTask, TState >::shared_from_this() );
 }
 
