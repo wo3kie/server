@@ -55,7 +55,7 @@ public:
         std::string const & port
     );
 
-    IConnection * createConnection() override
+    Connection< TTask >* createConnection() override
     {
         return new Connection< TTask >( m_ioService, *this );
     }

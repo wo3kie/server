@@ -1,5 +1,5 @@
-#ifndef _TASK_ECHO_HPP_
-#define _TASK_ECHO_HPP_
+#ifndef _ECHO_TASK_HPP_
+#define _ECHO_TASK_HPP_
 
 #include <iostream>
 #include <sstream>
@@ -7,10 +7,10 @@
 
 #include "./myconnection.hpp"
 
-class TaskEcho
+class EchoTask
 {
 public:
-    TaskEcho( MyConnection * connection )
+    EchoTask( MyConnection * connection )
         : m_connection( connection )
     {
     }
@@ -33,7 +33,7 @@ private:
     MyConnection * m_connection;
 };
 
-typename MyConnection::Action TaskEcho::parse(
+typename MyConnection::Action EchoTask::parse(
     char const * const buffer,
     std::size_t const bytesTransferred
 )
@@ -44,14 +44,14 @@ typename MyConnection::Action TaskEcho::parse(
     return MyConnection::Action::Process;
 }
 
-void TaskEcho::parseError()
+void EchoTask::parseError()
 {
     std::cerr
         << "Parse error"
         << std::endl;
 }
 
-void TaskEcho::process()
+void EchoTask::process()
 {
 }
 
