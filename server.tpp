@@ -146,17 +146,7 @@ void Server< TTask, TState >::broadcast(
 
     auto sendMessage = [ this, & sender, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
-        auto const continuation = boost::bind(
-            & Connection< TTask, TState >::doNothing,
-            sender,
-            placeholders::error
-        );
-
-        asio::async_write(
-            connectionPtr->socket(),
-            asio::buffer( message, size ),
-            continuation
-        );
+        connectionPtr->response( message, size );
     };
 
     m_connectionManager.forEachIf( skipSender, sendMessage );
@@ -180,17 +170,7 @@ void Server< TTask, TState >::unicast(
 
     auto sendMessage = [ this, & sender, & size, & message ]( ConnectionPtr const & connectionPtr )
     {
-        auto const continuation = boost::bind(
-            & Connection< TTask, TState >::doNothing,
-            sender,
-            placeholders::error
-        );
-
-        asio::async_write(
-            connectionPtr->socket(),
-            asio::buffer( message, size ),
-            continuation
-        );
+        connectionPtr->response( message, size );
     };
 
     m_connectionManager.forEachIf( matchReceiver, sendMessage );
