@@ -13,30 +13,20 @@
 #include <boost/shared_ptr.hpp>
 
 #include "./iconnection.hpp"
+#include "./iserver.hpp"
 
 template<
-    typename TTask,
-    typename TState
->
-class Server;
-
-template<
-    typename TTask,
-    typename TState
+    typename TTask
 >
 class Connection
     : public IConnection
-    , public boost::enable_shared_from_this< Connection< TTask, TState > >
+    , public boost::enable_shared_from_this< Connection< TTask > >
 {
-public:
-
-    typedef boost::shared_ptr< Connection< TTask, TState > > ConnectionPtr;
-
 public:
 
     Connection( 
         asio::io_service & ioService,
-        Server< TTask, TState > & server
+        IServer & server
     );
 
 #ifdef SERVER_SSL
@@ -111,7 +101,7 @@ private:
 
     void restartAgain(
         sys::error_code const & errorCode,
-        IConnection::Action const action
+        MyConnection::Action const action
     );
 
 private:
@@ -122,7 +112,7 @@ private:
     ip::tcp::socket m_socket;
 #endif
 
-    Server< TTask, TState > & m_server;
+    IServer & m_server;
     TTask m_task;
 
     std::string m_id;

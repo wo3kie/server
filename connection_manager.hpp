@@ -9,13 +9,11 @@
 #include "./connection.hpp"
 
 template<
-    typename TTask,
-    typename TState
+    typename TTask
 >
 class ConnectionManager
     : public boost::noncopyable
 {
-    typedef boost::shared_ptr< Connection< TTask, TState > > ConnectionPtr;
     typedef std::set< ConnectionPtr > ConnectionsPtr;
 
 public:
@@ -48,11 +46,10 @@ private:
 };
 
 template<
-	typename TTask,
-	typename TState
+	typename TTask
 >
 template< typename Function, class... Args >
-void ConnectionManager< TTask, TState >::forEach(
+void ConnectionManager< TTask >::forEach(
     Function&& func,
     Args && ...args
 )
@@ -66,11 +63,10 @@ void ConnectionManager< TTask, TState >::forEach(
 }
 
 template<
-	typename TTask,
-	typename TState
+	typename TTask
 >
 template< typename Predicate, typename Function, class... Args >
-void ConnectionManager< TTask, TState >::forEachIf(
+void ConnectionManager< TTask >::forEachIf(
     Predicate && predicate,
     Function && func,
     Args && ...args
@@ -88,10 +84,9 @@ void ConnectionManager< TTask, TState >::forEachIf(
 }
 
 template<
-	typename TTask,
-	typename TState
+	typename TTask
 >
-void ConnectionManager< TTask, TState >::add(
+void ConnectionManager< TTask >::add(
     ConnectionPtr & connection
 )
 {
@@ -101,10 +96,9 @@ void ConnectionManager< TTask, TState >::add(
 }
 
 template<
-	typename TTask,
-	typename TState
+	typename TTask
 >
-void ConnectionManager< TTask, TState >::remove(
+void ConnectionManager< TTask >::remove(
     ConnectionPtr const & connection
 )
 {

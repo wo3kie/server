@@ -6,22 +6,22 @@
 #include <sstream>
 #include <string>
 
-#include "./iconnection.hpp"
+#include "./myconnection.hpp"
 
 class TaskDayTime
 {
 public:
-    TaskDayTime( IConnection * connection )
+    TaskDayTime( MyConnection * connection )
         : m_connection( connection )
     {
     }
 
-    static IConnection::Action start()
+    static MyConnection::Action start()
     {
-        return IConnection::Action::Process;
+        return MyConnection::Action::Process;
     }
 
-    IConnection::Action parse(
+    MyConnection::Action parse(
         char const * const buffer,
         std::size_t const bytesTransferred
     );
@@ -31,15 +31,15 @@ public:
     void process();
 
 private:
-    IConnection * m_connection;
+    MyConnection * m_connection;
 };
 
-typename IConnection::Action TaskDayTime::parse(
+typename MyConnection::Action TaskDayTime::parse(
     char const * const buffer,
     std::size_t const bytesTransferred
 )
 {
-    return IConnection::Action::Process;
+    return MyConnection::Action::Process;
 }
 
 void TaskDayTime::parseError()

@@ -5,22 +5,22 @@
 #include <sstream>
 #include <string>
 
-#include "./iconnection.hpp"
+#include "./myconnection.hpp"
 
 class TaskEcho
 {
 public:
-    TaskEcho( IConnection * connection )
+    TaskEcho( MyConnection * connection )
         : m_connection( connection )
     {
     }
 
-    static IConnection::Action start()
+    static MyConnection::Action start()
     {
-        return IConnection::Action::Read;
+        return MyConnection::Action::Read;
     }
 
-    IConnection::Action parse(
+    MyConnection::Action parse(
         char const * const buffer,
         std::size_t const bytesTransferred
     );
@@ -30,10 +30,10 @@ public:
     void process();
 
 private:
-    IConnection * m_connection;
+    MyConnection * m_connection;
 };
 
-typename IConnection::Action TaskEcho::parse(
+typename MyConnection::Action TaskEcho::parse(
     char const * const buffer,
     std::size_t const bytesTransferred
 )
@@ -41,7 +41,7 @@ typename IConnection::Action TaskEcho::parse(
     m_connection->response( buffer, bytesTransferred );
     m_connection->read();
 
-    return IConnection::Action::Process;
+    return MyConnection::Action::Process;
 }
 
 void TaskEcho::parseError()

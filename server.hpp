@@ -9,6 +9,8 @@
 
 #include "./connection.hpp"
 #include "./connection_manager.hpp"
+#include "./iserver.hpp"
+#include "./iconnection.hpp"
 
 template< typename TState >
 struct State
@@ -38,7 +40,8 @@ template<
     typename TState = void
 >
 class Server
-    : private State< TState >
+    : public IServer
+    , private State< TState >
 {
 public:
     
@@ -48,13 +51,14 @@ public:
 
 public:
 
-    typedef boost::shared_ptr< Connection< TTask, TState > > ConnectionPtr;
-
-public:
-
     Server(
         std::string const & port
     );
+
+    IConnection * createConnection() override
+    {
+        return new Connection< TTask >( m_ioService, *this );
+    }
 
     void run();
 
@@ -80,8 +84,13 @@ public:
         ConnectionPtr const & sender
     );
 
+    void * getState() override
+    {
+        return State< TState >::getState();
+    }
+
 #ifdef SERVER_SSL
-    ssl::context & getSSLContext()
+    ssl::context & getSSLContext() override
     {
         return m_sslContext;
     }
@@ -112,7 +121,7 @@ private:
 #endif
 
     ConnectionPtr m_newConnection;
-    ConnectionManager< TTask, TState > m_connectionManager;
+    ConnectionManager< TTask > m_connectionManager;
 };
 
 #include "./server.tpp"

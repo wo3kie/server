@@ -5,22 +5,22 @@
 #include <sstream>
 #include <string>
 
-#include "./iconnection.hpp"
+#include "./myconnection.hpp"
 
 class TaskChat
 {
 public:
-    TaskChat( IConnection * connection )
+    TaskChat( MyConnection * connection )
         : m_connection( connection )
     {
     }
 
-    static IConnection::Action start()
+    static MyConnection::Action start()
     {
-        return IConnection::Action::Read;
+        return MyConnection::Action::Read;
     }
 
-    IConnection::Action parse(
+    MyConnection::Action parse(
         char const * const buffer,
         std::size_t const bytesTransferred
     );
@@ -30,10 +30,10 @@ public:
     void process();
 
 private:
-    IConnection * m_connection;
+    MyConnection * m_connection;
 };
 
-typename IConnection::Action TaskChat::parse(
+typename MyConnection::Action TaskChat::parse(
     char const * const buffer,
     std::size_t const bytesTransferred
 )
@@ -100,7 +100,7 @@ typename IConnection::Action TaskChat::parse(
         m_connection->read();
     }
 
-    return IConnection::Action::Process;
+    return MyConnection::Action::Process;
 }
 
 void TaskChat::parseError()

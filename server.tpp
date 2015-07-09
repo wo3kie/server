@@ -193,7 +193,7 @@ template<
 >
 void Server< TTask, TState >::startAccept()
 {
-    m_newConnection.reset( new Connection< TTask, TState >( m_ioService, *this ) );
+    m_newConnection.reset( createConnection() );
 
     auto const onAccepted = boost::bind(
         & Server< TTask, TState >::onAccepted,
