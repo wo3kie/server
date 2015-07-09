@@ -23,7 +23,7 @@ pem:
 	make pem -C ssl
 
 .PHONY: depend
-depend: $(SRCS) $(HDRS)
+depend: $(SRCS)
 	$(CXX) $(CXXFLAGS) -MM $^ > .makefile.dep
 ifeq ($(SSL),1)
 	make depend -C ssl

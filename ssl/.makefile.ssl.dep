@@ -1,31 +1,20 @@
 client_sign_ssl.o: client_sign.cpp .././client.hpp .././client.tpp \
   client_sign.hpp client_key.hpp
 sign_ssl.o: sign.cpp .././server.hpp .././connection.hpp .././iconnection.hpp \
-  .././connection_manager.hpp .././server.tpp .././server_chat.hpp \
-  .././connection.tpp server_sign.hpp
+  .././myconnection.hpp .././iserver.hpp .././connection_manager.hpp \
+  .././server.tpp .././server_chat.hpp .././connection.tpp \
+  server_sign.hpp
 chat_ssl.o: ../chat.cpp .././server.hpp .././connection.hpp \
-  .././iconnection.hpp .././connection_manager.hpp .././server.tpp \
-  .././server_chat.hpp .././connection.tpp
+  .././iconnection.hpp .././myconnection.hpp .././iserver.hpp \
+  .././connection_manager.hpp .././server.tpp .././server_chat.hpp \
+  .././connection.tpp
 client_console_ssl.o: ../client_console.cpp .././client.hpp .././client.tpp \
   .././client_console.hpp
 day_time_ssl.o: ../day_time.cpp .././server.hpp .././connection.hpp \
-  .././iconnection.hpp .././connection_manager.hpp .././server.tpp \
-  .././server_chat.hpp .././connection.tpp .././server_day_time.hpp
-echo_ssl.o: ../echo.cpp .././server.hpp .././connection.hpp \
-  .././iconnection.hpp .././connection_manager.hpp .././server.tpp \
-  .././server_chat.hpp .././connection.tpp .././server_echo.hpp
-client_key_ssl.o: client_key.hpp .././client.hpp .././client.tpp
-client_sign_ssl.o: client_sign.hpp .././client.hpp .././client.tpp
-server_sign_ssl.o: server_sign.hpp .././iconnection.hpp
-client_console_ssl.o: ../client_console.hpp .././client.hpp .././client.tpp
-client_ssl.o: ../client.hpp .././client.tpp
-connection_ssl.o: ../connection.hpp .././iconnection.hpp
-connection_manager_ssl.o: ../connection_manager.hpp .././connection.hpp \
-  .././iconnection.hpp
-iconnection_ssl.o: ../iconnection.hpp
-server_chat_ssl.o: ../server_chat.hpp .././iconnection.hpp
-server_day_time_ssl.o: ../server_day_time.hpp .././iconnection.hpp
-server_echo_ssl.o: ../server_echo.hpp .././iconnection.hpp
-server_ssl.o: ../server.hpp .././connection.hpp .././iconnection.hpp \
+  .././iconnection.hpp .././myconnection.hpp .././iserver.hpp \
   .././connection_manager.hpp .././server.tpp .././server_chat.hpp \
-  .././connection.tpp
+  .././connection.tpp .././server_day_time.hpp
+echo_ssl.o: ../echo.cpp .././echo_server.hpp .././server.hpp \
+  .././connection.hpp .././iconnection.hpp .././myconnection.hpp \
+  .././iserver.hpp .././connection_manager.hpp .././server.tpp \
+  .././server_chat.hpp .././connection.tpp .././echo_task.hpp

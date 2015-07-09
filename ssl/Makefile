@@ -45,7 +45,7 @@ pem:
 	cat server-cert.pem ca.pem > server.pem
 
 .PHONY: depend
-depend: $(SRCS_SSL) $(SRCS) $(HDRS_SSL) $(HDRS)
+depend: $(SRCS_SSL) $(SRCS)
 	$(CXX) $(CXXFLAGS) -MM $^ > .makefile.ssl.dep
 	sed -i 's/\.o:/_ssl\.o:/' .makefile.ssl.dep
 
