@@ -1,11 +1,32 @@
 #ifndef _ICONNECTION_HPP_
 #define _ICONNECTION_HPP_
 
-#include "./myconnection.hpp"
+#include <string>
+
+#include <boost/enable_shared_from_this.hpp>
+#include <boost/shared_ptr.hpp>
+
+namespace asio = boost::asio;
+namespace ip = asio::ip;
+namespace placeholders = asio::placeholders;
+
+#ifdef SERVER_SSL
+namespace ssl = asio::ssl;
+#endif
+
+namespace sys = boost::system;
+
+class IServer;
 
 struct IConnection
-    : public MyConnection
 {
+    enum class Action
+    {
+        Read,
+        ReadError,
+        Process
+    };
+
     virtual
 #ifdef SERVER_SSL
     ssl::stream< asio::ip::tcp::socket > &
@@ -14,22 +35,30 @@ struct IConnection
 #endif
     socket() = 0;
 
+    virtual void read() = 0;
+
+    virtual void broadcast(
+        char const * const message,
+        std::size_t const size
+    ) = 0;
+
+    virtual void log(
+        char const * const message,
+        std::size_t const size 
+    ) = 0;
+
+    virtual void disconnect() = 0;
+
     virtual void start(
         Action const action
     ) = 0;
-
-    virtual void setId(
-        std::string const & id
-    ) = 0;
-
-    virtual std::string const & getId() const = 0;
 
     virtual void response(
         char const * const message,
         std::size_t const size
     ) = 0;
 
-    virtual MyConnection::Action getStartAction() const = 0;
+    virtual Action getStartAction() const = 0;
 };
 
 #endif

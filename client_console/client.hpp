@@ -1,23 +1,72 @@
-#include "./client.hpp"
+#ifndef _CLIENT_HPP_
+#define _CLIENT_HPP_
 
-Task::Task(
-    asio::io_service & ioService,
+#include <iostream>
+#include <string>
+
+#include <boost/asio.hpp>
 
 #ifdef SERVER_SSL
-    ssl::stream< ip::tcp::socket > & socket
-#else
-    ip::tcp::socket & socket
+#include <boost/asio/ssl.hpp>
 #endif
-)
-    : m_ioService( ioService )
-    , m_socket( socket )
-{
-}
 
-void Task::run()
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
+
+namespace asio = boost::asio;
+namespace ip = asio::ip;
+namespace placeholders = asio::placeholders;
+namespace sys = boost::system;
+
+#ifdef SERVER_SSL
+namespace ssl = asio::ssl;
+#endif
+
+template< typename TReader, typename TWriter >
+struct Client
 {
-    runImpl();
-}
+    Client(
+        asio::io_service & ioService,
+        std::string const & host,
+        std::string const & port,
+        int argc = 0,
+        char* argv[] = {}
+    );
+
+private:
+
+#ifdef SERVER_SSL
+    bool verifyCertificate(
+        bool const preverified,
+        ssl::verify_context & ctx 
+    );
+#endif
+
+    void onResolved(
+        sys::error_code const & errorCode,
+        ip::tcp::resolver::iterator endpointIterator 
+    );
+
+    void onConnected(
+        sys::error_code const & errorCode 
+    );
+
+    void onHandShake(
+        sys::error_code const & errorCode
+    );
+
+    asio::io_service & m_ioService;
+
+#ifdef SERVER_SSL
+    ssl::context m_ctx;
+    ssl::stream< ip::tcp::socket > m_socket;
+#else
+    ip::tcp::socket m_socket;
+#endif
+
+    TReader m_reader;
+    TWriter m_writer;
+};
 
 template< typename TReader, typename TWriter >
 Client< TReader, TWriter >::Client(
@@ -168,4 +217,7 @@ void Client< TReader, TWriter >::onHandShake(
         boost::thread( boost::bind( & TWriter::run, m_writer ) ).join();
     }
 }
+
+
+#endif
 

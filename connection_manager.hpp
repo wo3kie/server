@@ -8,9 +8,6 @@
 
 #include "./connection.hpp"
 
-template<
-    typename TTask
->
 class ConnectionManager
     : public boost::noncopyable
 {
@@ -45,11 +42,8 @@ private:
     ConnectionsPtr m_connections;
 };
 
-template<
-	typename TTask
->
 template< typename Function, class... Args >
-void ConnectionManager< TTask >::forEach(
+void ConnectionManager::forEach(
     Function&& func,
     Args && ...args
 )
@@ -62,11 +56,8 @@ void ConnectionManager< TTask >::forEach(
     }
 }
 
-template<
-	typename TTask
->
 template< typename Predicate, typename Function, class... Args >
-void ConnectionManager< TTask >::forEachIf(
+void ConnectionManager::forEachIf(
     Predicate && predicate,
     Function && func,
     Args && ...args
@@ -83,10 +74,7 @@ void ConnectionManager< TTask >::forEachIf(
     }
 }
 
-template<
-	typename TTask
->
-void ConnectionManager< TTask >::add(
+void ConnectionManager::add(
     ConnectionPtr & connection
 )
 {
@@ -95,10 +83,7 @@ void ConnectionManager< TTask >::add(
     m_connections.insert( connection ); 
 }
 
-template<
-	typename TTask
->
-void ConnectionManager< TTask >::remove(
+void ConnectionManager::remove(
     ConnectionPtr const & connection
 )
 {
