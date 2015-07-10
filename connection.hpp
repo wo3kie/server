@@ -14,19 +14,18 @@
 
 #include "./iconnection.hpp"
 #include "./iserver.hpp"
+#include "./itask.hpp"
 
-template<
-    typename TTask
->
 class Connection
     : public IConnection
-    , public boost::enable_shared_from_this< Connection< TTask > >
+    , public boost::enable_shared_from_this< Connection >
 {
 public:
 
     Connection( 
         asio::io_service & ioService,
-        IServer & server
+        IServer * server,
+        ITask * task
     );
 
 #ifdef SERVER_SSL
@@ -89,7 +88,12 @@ public: // api
 
     void const * getState() const override
     {
-        return m_server.getState();
+        return m_server->getState();
+    }
+
+    MyConnection::Action getStartAction() const
+    {
+        return m_task->getStartAction();
     }
 
 private:
@@ -112,8 +116,8 @@ private:
     ip::tcp::socket m_socket;
 #endif
 
-    IServer & m_server;
-    TTask m_task;
+    IServer * m_server;
+    ITask * m_task;
 
     std::string m_id;
 

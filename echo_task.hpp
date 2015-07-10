@@ -6,8 +6,10 @@
 #include <string>
 
 #include "./myconnection.hpp"
+#include "./itask.hpp"
 
 class EchoTask
+    : public ITask
 {
 public:
     EchoTask( MyConnection * connection )
@@ -15,7 +17,7 @@ public:
     {
     }
 
-    static MyConnection::Action start()
+    MyConnection::Action getStartAction() const
     {
         return MyConnection::Action::Read;
     }

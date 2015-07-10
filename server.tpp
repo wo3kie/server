@@ -223,7 +223,7 @@ void Server< TTask, TState >::onAccepted(
     {
         m_connectionManager.add( m_newConnection );
 
-        m_newConnection->start( TTask::start() );
+        m_newConnection->start( m_newConnection->getStartAction() );
     }
 
     startAccept();

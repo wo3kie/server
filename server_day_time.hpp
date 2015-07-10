@@ -16,7 +16,7 @@ public:
     {
     }
 
-    static MyConnection::Action start()
+    MyConnection::Action getStartAction() const
     {
         return MyConnection::Action::Process;
     }

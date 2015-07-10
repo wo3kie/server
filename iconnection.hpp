@@ -28,6 +28,8 @@ struct IConnection
         char const * const message,
         std::size_t const size
     ) = 0;
+
+    virtual MyConnection::Action getStartAction() const = 0;
 };
 
 #endif

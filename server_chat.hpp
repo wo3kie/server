@@ -6,16 +6,22 @@
 #include <string>
 
 #include "./myconnection.hpp"
+#include "./itask.hpp"
 
 class TaskChat
+    : public ITask
 {
 public:
-    TaskChat( MyConnection * connection )
-        : m_connection( connection )
+    TaskChat()
     {
     }
 
-    static MyConnection::Action start()
+    void setConnection( IConnection * connection )
+    {
+        m_connection = connection;
+    }
+
+    MyConnection::Action getStartAction() const
     {
         return MyConnection::Action::Read;
     }
