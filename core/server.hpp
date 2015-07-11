@@ -29,27 +29,18 @@ public:
         std::string const & port
     );
 
-    Connection * createConnection() override
+    IConnectionPtr createConnection() override
     {
-        return new Connection( m_ioService, this, createTask() );
+        return IConnectionPtr( new Connection( m_ioService, this, createTask() ) );
     }
 
-    void run();
+    virtual ITaskPtr createTask() = 0;
 
-    void run(
-        int argc,
-        char* argv[]
-    );
-
-    void broadcast(
-        ConnectionPtr const & sender,
-        char const * const message,
-        std::size_t const size
-    );
+    void run() override;
 
     void disconnect(
-        ConnectionPtr const & sender
-    );
+        IConnectionPtr const & sender
+    ) override;
 
 #ifdef SERVER_SSL
     ssl::context & getSSLContext() override
@@ -59,9 +50,6 @@ public:
 #endif
 
 private:
-
-    void init( int argc, char* argv[] );
-    void destroy();
 
     void startAccept();
 
@@ -83,7 +71,7 @@ protected:
     ssl::context m_sslContext;
 #endif
 
-    ConnectionPtr m_newConnection;
+    IConnectionPtr m_newConnection;
     ConnectionManager m_connectionManager;
 };
 
@@ -102,23 +90,7 @@ Server::Server(
 {
 }
 
-void Server::init( int argc, char* argv[] )
-{
-}
-
-void Server::destroy()
-{
-}
-
 void Server::run()
-{
-    run( 0, {} );
-}
-
-void Server::run(
-    int argc,
-    char* argv[]
-)
 {
     m_signals.add( SIGINT );
     m_signals.add( SIGTERM );
@@ -160,8 +132,6 @@ void Server::run(
 
     startAccept();
 
-    init( argc, argv );
-
     boost::thread_group threadGroup; 
 
     auto const threadBody = boost::bind(
@@ -175,31 +145,10 @@ void Server::run(
     }
 
     threadGroup.join_all();
-
-    destroy();
-}
-
-void Server::broadcast(
-    ConnectionPtr const & sender,
-    char const * const message,
-    std::size_t const size
-)
-{
-    auto const skipSender = [ & sender ]( ConnectionPtr const & connectionPtr )
-    {
-        return sender->socket().native_handle() != connectionPtr->socket().native_handle();
-    };
-
-    auto sendMessage = [ this, & sender, & size, & message ]( ConnectionPtr const & connectionPtr )
-    {
-        connectionPtr->response( message, size );
-    };
-
-    m_connectionManager.forEachIf( skipSender, sendMessage );
 }
 
 void Server::disconnect(
-    ConnectionPtr const & sender
+    IConnectionPtr const & sender
 )
 {
     m_connectionManager.remove( sender );
@@ -207,7 +156,7 @@ void Server::disconnect(
 
 void Server::startAccept()
 {
-    m_newConnection.reset( createConnection() );
+    m_newConnection = createConnection();
 
     auto const onAccepted = boost::bind(
         & Server::onAccepted,

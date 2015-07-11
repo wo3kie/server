@@ -22,6 +22,49 @@ namespace sys = boost::system;
 namespace ssl = asio::ssl;
 #endif
 
+struct Task
+{
+    Task(
+        asio::io_service & ioService,
+
+#ifdef SERVER_SSL
+        ssl::stream< ip::tcp::socket > & socket
+#else
+        ip::tcp::socket & socket
+#endif
+    );
+
+    void run(){ runImpl(); }
+
+protected:
+
+    virtual void runImpl() = 0;
+
+protected:
+
+    asio::io_service & m_ioService;
+
+#ifdef SERVER_SSL
+    ssl::stream< ip::tcp::socket > & m_socket;
+#else
+    ip::tcp::socket & m_socket;
+#endif
+};
+
+Task::Task(
+    asio::io_service & ioService,
+
+#ifdef SERVER_SSL
+    ssl::stream< ip::tcp::socket > & socket
+#else
+    ip::tcp::socket & socket
+#endif
+)
+    : m_ioService( ioService )
+    , m_socket( socket )
+{
+}
+
 template< typename TReader, typename TWriter >
 struct Client
 {

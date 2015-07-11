@@ -1,17 +1,17 @@
 #ifndef _UNICAST_CONNECTION_HPP_
 #define _UNICAST_CONNECTION_HPP_
 
-#include "./connection.hpp"
+#include "../core/connection.hpp"
 
 class UnicastConnection
-    : public Connection
+    : virtual public Connection
 {
 public:
 
     UnicastConnection(
         asio::io_service & ioService,
         IServer * server,
-        ITask * task
+        ITaskPtr task
     )
         : Connection( ioService, server, task ) 
     {

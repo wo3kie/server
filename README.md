@@ -22,8 +22,6 @@ make SSL=1
 
 ## how to run it
 Start any server you wish  
-'./echo *port*'  
-'./day_time *port*'  
 './chat *port*'  
 and client  
 './client *port*'  

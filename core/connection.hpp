@@ -10,7 +10,6 @@
 #endif
 
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include "./iconnection.hpp"
 #include "./iserver.hpp"
@@ -25,15 +24,8 @@ public:
     Connection( 
         asio::io_service & ioService,
         IServer * server,
-        ITask * task
+        ITaskPtr task
     );
-
-#ifdef SERVER_SSL
-    ssl::stream< asio::ip::tcp::socket > &
-#else
-    ip::tcp::socket &
-#endif
-    socket();
 
     void start(
         Action const action
@@ -64,20 +56,18 @@ public: // api
         std::size_t const size
     ) override;
 
-    void broadcast(
-        char const * const message,
-        std::size_t const size
-    ) override;
-
-    void log(
-        char const * const message,
-        std::size_t const size 
-    ) override;
-
     IConnection::Action getStartAction() const
     {
         return m_task->getStartAction();
     }
+
+public: // ssl
+
+    #ifdef SERVER_SSL
+        ssl::stream< asio::ip::tcp::socket > & socket();
+    #else
+        ip::tcp::socket & socket();
+    #endif
 
 protected:
 
@@ -93,30 +83,33 @@ protected:
 
 protected:
 
-#ifdef SERVER_SSL
-    ssl::stream< ip::tcp::socket > m_socket;
-#else
-    ip::tcp::socket m_socket;
-#endif
-
     IServer * m_server;
-    ITask * m_task;
+    ITaskPtr m_task;
 
     enum { m_maxSize = 1024 };
     char m_buffer[ m_maxSize ];
+
+protected: // ssl
+
+    #ifdef SERVER_SSL
+        ssl::stream< ip::tcp::socket > m_socket;
+    #else
+        ip::tcp::socket m_socket;
+    #endif
+
 };
 
 Connection::Connection( 
     asio::io_service & ioService,
     IServer * server,
-    ITask * task
+    ITaskPtr task
 )
 
-#ifdef SERVER_SSL
-    : m_socket( ioService, server.getSSLContext() )
-#else
-    : m_socket( ioService )
-#endif
+    #ifdef SERVER_SSL
+        : m_socket( ioService, server.getSSLContext() )
+    #else
+        : m_socket( ioService )
+    #endif
 
     , m_server( server )
     , m_task( task )
@@ -125,35 +118,35 @@ Connection::Connection(
 }
 
 #ifdef SERVER_SSL
-ssl::stream< asio::ip::tcp::socket > &
+    ssl::stream< asio::ip::tcp::socket > &
 #else
-ip::tcp::socket &
+    ip::tcp::socket &
 #endif
-Connection::socket()
-{
-    return m_socket;
-}
+    Connection::socket()
+    {
+        return m_socket;
+    }
 
 void Connection::start(
     IConnection::Action const action
 )
 {
 
-#ifdef SERVER_SSL
-    auto const restart = boost::bind(
-        & Connection::restartAgain,
-        Connection::shared_from_this(),
-        placeholders::error,
-        action
-    );
+    #ifdef SERVER_SSL
+        auto const restart = boost::bind(
+            & Connection::restartAgain,
+            Connection::shared_from_this(),
+            placeholders::error,
+            action
+        );
 
-    m_socket.async_handshake(
-        ssl::stream_base::server,
-        restart
-    );
-#else
-    restart( action );
-#endif
+        m_socket.async_handshake(
+            ssl::stream_base::server,
+            restart
+        );
+    #else
+        restart( action );
+    #endif
 
 }
 
@@ -263,15 +256,6 @@ void Connection::response(
     );
 }
 
-void Connection::log(
-    char const * const message,
-    std::size_t const size
-)
-{
-    std::cout.write( message, size );
-    std::cout << std::endl;
-}
-
 void Connection::doNothing(
     sys::error_code const & errorCode
 )
@@ -288,14 +272,6 @@ void Connection::stop()
 {
     char const * const message = "Goodbye.";
     response( message, strlen( message ) );
-}
-
-void Connection::broadcast(
-    char const * const message,
-    std::size_t const size
-)
-{
-    m_server->broadcast( Connection::shared_from_this(), message, size );
 }
 
 void Connection::disconnect()

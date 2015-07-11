@@ -11,7 +11,7 @@
 class ConnectionManager
     : public boost::noncopyable
 {
-    typedef std::set< ConnectionPtr > ConnectionsPtr;
+    typedef std::set< IConnectionPtr > ConnectionsPtr;
 
 public:
 
@@ -29,11 +29,11 @@ public:
     );
 
     void add(
-        ConnectionPtr & connection
+        IConnectionPtr & connection
     );
 
     void remove(
-        ConnectionPtr const & connection
+        IConnectionPtr const & connection
     );
 
 private:
@@ -75,7 +75,7 @@ void ConnectionManager::forEachIf(
 }
 
 void ConnectionManager::add(
-    ConnectionPtr & connection
+    IConnectionPtr & connection
 )
 {
     boost::lock_guard< boost::mutex > lock( m_mutex );
@@ -84,7 +84,7 @@ void ConnectionManager::add(
 }
 
 void ConnectionManager::remove(
-    ConnectionPtr const & connection
+    IConnectionPtr const & connection
 )
 {
     boost::lock_guard< boost::mutex > lock( m_mutex );

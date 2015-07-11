@@ -5,6 +5,8 @@ class IConnection;
 
 struct ITask
 {
+    virtual ~ITask(){}
+
     virtual IConnection::Action getStartAction() const = 0;
 
     virtual IConnection::Action parse(
@@ -16,7 +18,9 @@ struct ITask
 
     virtual void process() = 0;
 
-    virtual void setConnection( IConnection * connection ) = 0;
+    virtual void setConnection(
+        IConnection * connection
+    ) = 0;
 };
 
 #endif

@@ -1,33 +1,26 @@
 include ./common.mk
 
-SRCS=$(shell ls *.cpp)
-HDRS=$(shell ls *.hpp *.tpp)
-OBJS=$(subst .cpp,.o,$(SRCS))
-APPS=$(subst .cpp,,$(SRCS))
-
 .PHONY: all
-all: $(APPS)
-ifeq ($(SSL),1)
-	make all -C ssl
-endif
+all:
+	make $@ -C client_console
+	make $@ -C chat
+	make $@ -C echo
 
 .PHONY: clean
 clean:
-	rm -f $(OBJS) $(APPS)
-ifeq ($(SSL),1)
-	make clean -C ssl
-endif
+	make $@ -C client_console
+	make $@ -C chat
+	make $@ -C echo
 
 .PHONY: pem
 pem:
-	make pem -C ssl
+	make $@ -C pem
 
 .PHONY: depend
-depend: $(SRCS)
-	$(CXX) $(CXXFLAGS) -MM $^ > .makefile.dep
-ifeq ($(SSL),1)
-	make depend -C ssl
-endif
+depend:
+	make $@ -C client_console
+	make $@ -C chat
+	make $@ -C echo
 
 include .makefile.dep
 
