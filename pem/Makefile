@@ -1,8 +1,5 @@
 include ../common.mk
 
-.PHONY: all
-all:
-
 .PHONY: pem
 pem:
 	openssl genrsa 2048 > ca-key.pem
@@ -11,8 +8,4 @@ pem:
 	openssl rsa -in server-key.pem -out server-key.pem
 	openssl x509 -req -in server-req.pem -days 365 -CA ca.pem -CAkey ca-key.pem -set_serial 01 -out server-cert.pem
 	cat server-cert.pem ca.pem > server.pem
-
-.PHONY: clean
-clean:
-	rm *pem
 

@@ -1,5 +1,3 @@
-#include "./client.hpp"
-
 #include "./client_console.hpp"
 
 int main( int argc, char* argv[] )

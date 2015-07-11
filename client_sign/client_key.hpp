@@ -1,19 +1,15 @@
-#ifndef _CLIENT_CONSOLE_
-#define _CLIENT_CONSOLE_
+#ifndef _CLIENT_KEY_
+#define _CLIENT_KEY_
+
+#include <fstream>
 
 #include "../core/client.hpp"
 
-struct Writer : Task
+struct WriterKey : Task
 {
-    Writer(
+    WriterKey(
         asio::io_service & ioService,
-
-#ifdef SERVER_SSL
         ssl::stream< ip::tcp::socket > & socket,
-#else
-        ip::tcp::socket & socket,
-#endif
-
         int argc,
         char* argv[]
     )
@@ -26,52 +22,45 @@ protected:
     void runImpl() override
     {
         auto const onRequestWritten = boost::bind(
-            & Writer::onRequestWritten,
+            & WriterKey::onRequestWritten,
             this,
-            placeholders::error
+            placeholders::error,
+            placeholders::bytes_transferred
         );
 
-        while( std::cin.getline( m_request, m_maxLength ) )
-        {
-            std::size_t const size = strlen( m_request );
+        m_request[ 0 ] = 'k';
 
-            asio::async_write(
-                m_socket,
-                asio::buffer( m_request, size ),
-                onRequestWritten
-            );
-        }
+        asio::async_write(
+            m_socket,
+            asio::buffer( m_request, 1 ),
+            onRequestWritten
+        );
     }
 
 private:
 
     void onRequestWritten(
-        sys::error_code const & errorCode
+        sys::error_code const & errorCode,
+        int bytesTransferred
     )
     {
         if( errorCode )
         {
-            std::cerr << "Request Write Error: " << errorCode.message() << std::endl;
+            std::cerr << "Request Write Error: " << errorCode.value() << " " << errorCode.message() << std::endl;
         }
     }
 
 private:
 
-    enum { m_maxLength = 1024 + 2 };
+    enum { m_maxLength = 1024 };
     char m_request[ m_maxLength ];
 };
 
-struct Reader : Task
+struct ReaderKey : Task
 {
-    Reader(
+    ReaderKey(
         asio::io_service & ioService,
-
-#ifdef SERVER_SSL
         ssl::stream< ip::tcp::socket > & socket,
-#else
-        ip::tcp::socket & socket,
-#endif
-
         int argc,
         char* argv[]
     )
@@ -84,7 +73,7 @@ protected:
     void runImpl() override
     {
         auto const onResponseRead = boost::bind(
-            & Reader::onResponseRead,
+            & ReaderKey::onResponseRead,
             this,
             placeholders::error,
             placeholders::bytes_transferred
@@ -109,13 +98,8 @@ private:
         }
         else
         {
-            std::cout << "> ";
             std::cout.write( m_response, bytesTransferred );
-            std::cout << std::endl;
-
-            m_ioService.post(
-                boost::bind( & Reader::runImpl, this )
-            );
+            std::flush( std::cout );
         }
     }
 

@@ -1,3 +1,5 @@
+SSL:=1
+
 include ../common.mk
 
 SRCS=$(shell ls *.cpp)

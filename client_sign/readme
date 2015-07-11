@@ -1,0 +1,14 @@
+$../sign/sign 12345
+
+$./client_sign --help
+Usage: ./client_sign
+  --sign <port> <filename>
+  -- key <port>
+  --verify <messagefile> <keyfile> <signature>
+
+$./client_sign --key 12345 > key
+$./client_sign --sign 12345 message > signature
+$./client_sign --verify message key signature
+OK
+$./client_sign --verify Makefile key signature
+Failed

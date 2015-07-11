@@ -1,26 +1,33 @@
 include ./common.mk
 
+APPS=client_console chat echo
+
+ifeq ($(SSL),1)
+APPS+=client_sign sign
+endif
+
 .PHONY: all
 all:
-	make $@ -C client_console
-	make $@ -C chat
-	make $@ -C echo
+	for d in $(APPS);\
+	do                      \
+		$(MAKE) $@ -C $$d;  \
+	done
 
 .PHONY: clean
 clean:
-	make $@ -C client_console
-	make $@ -C chat
-	make $@ -C echo
+	for d in $(APPS);\
+	do                      \
+		$(MAKE) $@ -C $$d;  \
+	done
 
 .PHONY: pem
 pem:
-	make $@ -C pem
+	$(MAKE) $@ -C pem
 
 .PHONY: depend
 depend:
-	make $@ -C client_console
-	make $@ -C chat
-	make $@ -C echo
-
-include .makefile.dep
+	for d in $(APPS);\
+	do                      \
+		$(MAKE) $@ -C $$d;  \
+	done
 

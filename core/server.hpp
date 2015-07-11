@@ -49,8 +49,7 @@ public:
     }
 #endif
 
-private:
-
+protected:
     void startAccept();
 
     void onAccepted(
