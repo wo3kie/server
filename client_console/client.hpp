@@ -134,7 +134,7 @@ Client< TReader, TWriter >::Client(
     ip::tcp::resolver::query query( host, port ); 
 
 #ifdef SERVER_SSL
-    m_ctx.load_verify_file( "./ca.pem" );
+    m_ctx.load_verify_file( "../pem/ca.pem" );
 
     m_socket.set_verify_mode( ssl::verify_peer );
     m_socket.set_verify_callback(

@@ -106,7 +106,7 @@ Connection::Connection(
 )
 
     #ifdef SERVER_SSL
-        : m_socket( ioService, server.getSSLContext() )
+        : m_socket( ioService, server->getSSLContext() )
     #else
         : m_socket( ioService )
     #endif

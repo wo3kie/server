@@ -126,8 +126,8 @@ void Server::run()
 
     m_sslContext.set_password_callback( passwordCallback );
 
-    m_sslContext.use_certificate_chain_file( "server.pem" );
-    m_sslContext.use_private_key_file( "server-key.pem", ssl::context::pem );
+    m_sslContext.use_certificate_chain_file( "../pem/server.pem" );
+    m_sslContext.use_private_key_file( "../pem/server-key.pem", ssl::context::pem );
 #endif
 
     startAccept();
