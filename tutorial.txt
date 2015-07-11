@@ -1,1 +1,78 @@
-... todo
+
+Server contains Connections. Connection constain Task. Task knows how to process
+data. Task is a place where you put your code.
+
+
+Server --{contains}--> Connection --{contains}--> Task
+                                                  run()
+
+
+To process data Task has to read them first. However it does not have a socket.
+Socket is a member of Connection.
+
+
+Server --{contains}--> Connection --{contains}--> Task
+                       socket                     run()
+
+
+To do this Task has to ask Connection to read data for it. After data are processed
+Task askes Connection again to send them back. That is why Task has a pointer to
+Connection.
+
+
+                               +------{uses}-------
+                              v                    \
+Server --{contains}--> Connection --{contains}--> Task
+                       socket                     run()
+                       read()
+                       write()
+
+
+For the most simple cases this is enough. But what if you want to do broadcast?
+Connections are separated. One is not aware of all the others. So how to do it?
+Connection has to ask Server for help. Server contains all Connections and may
+do broadcast easily.
+
+
+     +------{uses}------        +------{uses}------
+    v                   \      v                   \
+Server --{contains}--> Connection --{contains}--> Task
+broadcast()            socket                     run()
+                       read()
+                       write()
+
+
+Here we stay with circular dependencies. Server contains Connection which uses
+Server and Connection contains Task which uses Connection. To solve them base
+abstract classes were introduced.
+
+
+IServer                IConnection
+ ^                          ^
+ |   +-------{uses}-----    |    +-----{uses}-------
+ |  v                   \   |   v                   \
+Server --{contains}--> Connection --{contains}--> ITask
+broadcast()            socket                       ^
+                       read()                       |
+                       write()                      |
+                                                  MyTask
+
+
+Let's go even further. We would like to write a simple chat. To identify users
+we need to assign an ID to a user, and in order to send a message to a particular
+user we need to have unicast function provided by a Server. To implement this
+we can use inheritance.
+
+
+IServer                IConnection
+ ^                          ^
+ |   +-------{uses}-----    |    +-----{uses}-------
+ |  v                   \   |   v                   \
+Server --{contains}--> Connection --{contains}--> ITask
+ ^                          ^                      ^
+ |                          |                      |
+ |                          |                      |
+UnicastServer          UnicastConnection         ChatTask
+unicast()              id
+                       unicast()
+
