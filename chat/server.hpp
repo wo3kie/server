@@ -5,8 +5,8 @@
 #include "../ext/log/server.hpp"
 #include "../ext/broadcast/server.hpp"
 
-#include "./chat_task.hpp"
-#include "./chat_connection.hpp"
+#include "./task.hpp"
+#include "./connection.hpp"
 
 struct ChatServer
     : public UnicastServer

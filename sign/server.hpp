@@ -3,8 +3,8 @@
 
 #include "../ext/state/server.hpp"
 
-#include "./sign_task.hpp"
-#include "./sign_connection.hpp"
+#include "./task.hpp"
+#include "./connection.hpp"
 
 template<
     typename TState

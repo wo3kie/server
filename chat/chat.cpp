@@ -4,8 +4,8 @@
 #include "../ext/log/connection.tpp"
 #include "../ext/broadcast/connection.tpp"
 
-#include "./chat_server.hpp"
-#include "./chat_task.hpp"
+#include "./server.hpp"
+#include "./task.hpp"
 
 int main( int argc, char* argv[] )
 {

@@ -8,25 +8,16 @@
 #include "../core/iconnection.hpp"
 #include "../core/itask.hpp"
 
-#include "./echo_connection.hpp"
-
 class EchoTask
     : public ITask
 {
 public:
+
     EchoTask()
     {
     }
 
-    void setConnection( IConnection * connection )
-    {
-        m_connection = connection;
-    }
-
-    IConnection::Action getStartAction() const
-    {
-        return IConnection::Action::Read;
-    }
+    IConnection::Action getStartAction() const;
 
     IConnection::Action parse(
         char const * const buffer,
@@ -36,10 +27,12 @@ public:
     void parseError();
 
     void process();
-
-private:
-    IConnection * m_connection;
 };
+
+IConnection::Action EchoTask::getStartAction() const
+{
+    return IConnection::Action::Read;
+}
 
 typename IConnection::Action EchoTask::parse(
     char const * const buffer,

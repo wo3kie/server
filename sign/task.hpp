@@ -19,7 +19,7 @@
 #include "../core/iconnection.hpp"
 #include "../core/itask.hpp"
 
-#include "./sign_connection.hpp"
+#include "./connection.hpp"
 
 struct Key
 {
@@ -32,11 +32,6 @@ class SignTask
 public:
     SignTask()
     {
-    }
-
-    void setConnection( IConnection * connection )
-    {
-        m_connection = connection;
     }
 
     IConnection::Action getStartAction() const
@@ -63,9 +58,6 @@ private:
     );
 
     void sendPublicKey();
-
-private:
-    IConnection * m_connection;
 };
 
 void SignTask::parseError()

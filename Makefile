@@ -9,15 +9,15 @@ endif
 .PHONY: all
 all:
 	for d in $(APPS);\
-	do                      \
-		$(MAKE) $@ -C $$d;  \
+	do\
+		$(MAKE) $@ -C $$d;\
 	done
 
 .PHONY: clean
 clean:
 	for d in $(APPS);\
-	do                      \
-		$(MAKE) $@ -C $$d;  \
+	do\
+		$(MAKE) $@ -C $$d;\
 	done
 
 .PHONY: pem
@@ -27,7 +27,7 @@ pem:
 .PHONY: depend
 depend:
 	for d in $(APPS);\
-	do                      \
-		$(MAKE) $@ -C $$d;  \
+	do\
+		$(MAKE) $@ -C $$d;\
 	done
 

@@ -2,8 +2,8 @@
  
 #include "../ext/state/connection.tpp"
  
-#include "./sign_server.hpp"
-#include "./sign_task.hpp"
+#include "./server.hpp"
+#include "./task.hpp"
 
 int main( int argc, char* argv[] )
 {

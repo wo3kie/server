@@ -5,7 +5,7 @@ class IConnection;
 
 struct ITask
 {
-    virtual ~ITask(){}
+public:
 
     virtual IConnection::Action getStartAction() const = 0;
 
@@ -18,10 +18,36 @@ struct ITask
 
     virtual void process() = 0;
 
+public:
+
+    virtual ~ITask();
+
     virtual void setConnection(
         IConnection * connection
-    ) = 0;
+    );
+
+    virtual IConnection * getConnection();
+
+protected:
+
+    IConnection * m_connection;
 };
+
+ITask::~ITask()
+{
+}
+
+void ITask::setConnection(
+    IConnection * connection
+)
+{
+    m_connection = connection;
+}
+
+IConnection * ITask::getConnection()
+{
+    return m_connection;
+}
 
 #endif
 

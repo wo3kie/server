@@ -8,25 +8,16 @@
 #include "../core/iconnection.hpp"
 #include "../core/itask.hpp"
 
-#include "./chat_connection.hpp"
+#include "./connection.hpp"
 
 class ChatTask
     : public ITask
 {
 public:
-    ChatTask()
-    {
-    }
 
-    void setConnection( IConnection * connection )
-    {
-        m_connection = connection;
-    }
+    ChatTask();
 
-    IConnection::Action getStartAction() const
-    {
-        return IConnection::Action::Read;
-    }
+    IConnection::Action getStartAction() const;
 
     IConnection::Action parse(
         char const * const buffer,
@@ -36,10 +27,16 @@ public:
     void parseError();
 
     void process();
-
-private:
-    IConnection * m_connection;
 };
+
+ChatTask::ChatTask()
+{
+}
+
+IConnection::Action ChatTask::getStartAction() const
+{
+    return IConnection::Action::Read;
+}
 
 typename IConnection::Action ChatTask::parse(
     char const * const buffer,

@@ -1,7 +1,7 @@
 #include "../core/server.hpp"
 
-#include "./echo_server.hpp"
-#include "./echo_task.hpp"
+#include "./server.hpp"
+#include "./task.hpp"
 
 int main( int argc, char* argv[] )
 {
