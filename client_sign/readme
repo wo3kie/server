@@ -1,14 +1,25 @@
-$../sign/sign 12345
+Console1
+$ ./sign 12345
 
-$./client_sign --help
-Usage: ./client_sign
-  --sign <port> <filename>
-  -- key <port>
-  --verify <messagefile> <keyfile> <signature>
+    Console2
+    $ ./client_sign --help
+    Usage: ./client_sign
+        --sign <port> <filename>
+        --key <port>
+        --verify <messagefile> <keyfile> <signaturefile>
 
-$./client_sign --key 12345 > key
-$./client_sign --sign 12345 message > signature
-$./client_sign --verify message key signature
-OK
-$./client_sign --verify Makefile key signature
-Failed
+    $ ./client_sign --sign 12345 Makefile > signature
+
+    $ wc -c signature 
+    128 signature
+
+    $ ./client_sign --key 12345 > key
+    $ wc -c key
+    140 key
+
+    $ ./client_sign --verify Makefile key signature 
+    OK
+
+    $ ./client_sign --verify sign.cpp key signature 
+    Failed
+

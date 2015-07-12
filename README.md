@@ -20,22 +20,12 @@ make
 or  
 make SSL=1
 
-## how to run it
-Start any server you wish  
-'./chat *port*'  
-and client  
-'./client *port*'  
-All of them require port number as an argument.
-
 ## examples
-Please find  
-* echo.cpp
-* day_time.cpp
-* chat.cpp  
-files as example of different styles of servers
-
-## tutorial
-For more information check tutorial.txt file.
+Please run server and client
+* echo + client_console
+* chat + client_console
+* sign + client_sign
+Each directory has 'readme' file for more details.
 
 ## .tpp file extension in vim
 Insert line below into ~/.vimrc  
