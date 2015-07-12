@@ -149,7 +149,7 @@ ip::tcp::endpoint Server::resolve()
 
 unsigned Server::getThreadNumber() 
 {
-    return 4;
+    return boost::thread::hardware_concurrency();
 }
 
 void Server::runThreadPool()
