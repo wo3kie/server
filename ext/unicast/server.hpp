@@ -1,9 +1,9 @@
 #ifndef _UNICAST_SERVER_HPP_
 #define _UNICAST_SERVER_HPP_
 
-#include "../core/server.hpp"
+#include "../../core/server.hpp"
 
-#include "./unicast_connection.hpp"
+#include "./connection.hpp"
 
 class UnicastServer
     : virtual public Server

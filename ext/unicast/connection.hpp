@@ -1,7 +1,7 @@
 #ifndef _UNICAST_CONNECTION_HPP_
 #define _UNICAST_CONNECTION_HPP_
 
-#include "../core/connection.hpp"
+#include "../../core/connection.hpp"
 
 class UnicastConnection
     : virtual public Connection

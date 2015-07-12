@@ -6,7 +6,7 @@
 #include <boost/asio.hpp>
 
 #ifdef SERVER_SSL
-#include <boost/asio/ssl.hpp>
+    #include <boost/asio/ssl.hpp>
 #endif
 
 #include <boost/enable_shared_from_this.hpp>
@@ -61,8 +61,6 @@ public: // api
         return m_task->getStartAction();
     }
 
-public: // ssl
-
     #ifdef SERVER_SSL
         ssl::stream< asio::ip::tcp::socket > & socket();
     #else
@@ -89,14 +87,11 @@ protected:
     enum { m_maxSize = 1024 };
     char m_buffer[ m_maxSize ];
 
-protected: // ssl
-
     #ifdef SERVER_SSL
         ssl::stream< ip::tcp::socket > m_socket;
     #else
         ip::tcp::socket m_socket;
     #endif
-
 };
 
 Connection::Connection( 
@@ -104,7 +99,6 @@ Connection::Connection(
     IServer * server,
     ITaskPtr task
 )
-
     #ifdef SERVER_SSL
         : m_socket( ioService, server->getSSLContext() )
     #else
@@ -118,11 +112,10 @@ Connection::Connection(
 }
 
 #ifdef SERVER_SSL
-    ssl::stream< asio::ip::tcp::socket > &
+    ssl::stream< asio::ip::tcp::socket > & Connection::socket()
 #else
-    ip::tcp::socket &
+    ip::tcp::socket & Connection::socket()
 #endif
-    Connection::socket()
     {
         return m_socket;
     }
@@ -131,7 +124,6 @@ void Connection::start(
     IConnection::Action const action
 )
 {
-
     #ifdef SERVER_SSL
         auto const restart = boost::bind(
             & Connection::restartAgain,
@@ -147,7 +139,6 @@ void Connection::start(
     #else
         restart( action );
     #endif
-
 }
 
 void Connection::restart(

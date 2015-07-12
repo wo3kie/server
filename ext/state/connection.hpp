@@ -1,7 +1,7 @@
 #ifndef _STATE_CONNECTION_HPP_
 #define _STATE_CONNECTION_HPP_
 
-#include "../core/connection.hpp"
+#include "../../core/connection.hpp"
 
 template<
     typename TState

@@ -1,5 +1,5 @@
-#include "./state_connection.hpp"
-#include "./state_server.hpp"
+#include "./connection.hpp"
+#include "./server.hpp"
 
 template<
     typename TState

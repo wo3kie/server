@@ -1,7 +1,7 @@
 #ifndef _BROADCAST_CONNECTION_HPP_
 #define _BROADCAST_CONNECTION_HPP_
 
-#include "../core/connection.hpp"
+#include "../../core/connection.hpp"
 
 class BroadcastConnection
     : virtual public Connection

@@ -1,9 +1,9 @@
 #ifndef _STATE_SERVER_HPP_
 #define _STATE_SERVER_HPP_
 
-#include "../core/server.hpp"
+#include "../../core/server.hpp"
 
-#include "./state_connection.hpp"
+#include "./connection.hpp"
 
 template<
     typename TState

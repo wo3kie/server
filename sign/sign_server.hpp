@@ -1,7 +1,7 @@
 #ifndef _SIGN_SERVER_HPP_
 #define _SIGN_SERVER_HPP_
 
-#include "../ext/state_server.hpp"
+#include "../ext/state/server.hpp"
 
 #include "./sign_task.hpp"
 #include "./sign_connection.hpp"

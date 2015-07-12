@@ -11,7 +11,7 @@ namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
 namespace sys = boost::system;
 #ifdef SERVER_SSL
-namespace ssl = asio::ssl;
+    namespace ssl = asio::ssl;
 #endif
 
 class IServer;
@@ -27,12 +27,6 @@ struct IConnection
 
     virtual ~IConnection(){}
 
-#ifdef SERVER_SSL
-    virtual ssl::stream< asio::ip::tcp::socket > & socket() = 0;
-#else
-    virtual ip::tcp::socket & socket() = 0;
-#endif
-
     virtual Action getStartAction() const = 0;
 
     virtual void start(
@@ -47,6 +41,12 @@ struct IConnection
         char const * const message,
         std::size_t const size
     ) = 0;
+
+    #ifdef SERVER_SSL
+        virtual ssl::stream< asio::ip::tcp::socket > & socket() = 0;
+    #else
+        virtual ip::tcp::socket & socket() = 0;
+    #endif
 };
 
 #endif

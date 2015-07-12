@@ -1,8 +1,8 @@
 #include "../core/server.hpp"
 
-#include "../ext/unicast_connection.tpp"
-#include "../ext/log_connection.tpp"
-#include "../ext/broadcast_connection.tpp"
+#include "../ext/unicast/connection.tpp"
+#include "../ext/log/connection.tpp"
+#include "../ext/broadcast/connection.tpp"
 
 #include "./chat_server.hpp"
 #include "./chat_task.hpp"

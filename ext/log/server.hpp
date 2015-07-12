@@ -1,9 +1,9 @@
 #ifndef _LOG_SERVER_HPP_
 #define _LOG_SERVER_HPP_
 
-#include "../core/server.hpp"
+#include "../../core/server.hpp"
 
-#include "./log_connection.hpp"
+#include "./connection.hpp"
 
 class LogServer
     : virtual public Server

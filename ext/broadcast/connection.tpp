@@ -1,5 +1,5 @@
-#include "./broadcast_connection.hpp"
-#include "./broadcast_server.hpp"
+#include "./connection.hpp"
+#include "./server.hpp"
 
 void BroadcastConnection::broadcast(
     char const * const message,

@@ -23,10 +23,9 @@ struct IServer
         IConnectionPtr const & sender
     ) = 0;
 
-#ifdef SERVER_SSL
-    virtual ssl::context & getSSLContext() = 0;
-#endif
-
+    #ifdef SERVER_SSL
+        virtual ssl::context & getSSLContext() = 0;
+    #endif
 };
 
 #endif

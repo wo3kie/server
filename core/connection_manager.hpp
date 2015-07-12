@@ -42,7 +42,10 @@ private:
     ConnectionsPtr m_connections;
 };
 
-template< typename Function, class... Args >
+template<
+    typename Function,
+    class... Args
+>
 void ConnectionManager::forEach(
     Function&& func,
     Args && ...args
@@ -56,7 +59,11 @@ void ConnectionManager::forEach(
     }
 }
 
-template< typename Predicate, typename Function, class... Args >
+template<
+    typename Predicate,
+    typename Function,
+    class... Args
+>
 void ConnectionManager::forEachIf(
     Predicate && predicate,
     Function && func,

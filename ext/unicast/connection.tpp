@@ -1,5 +1,5 @@
-#include "./unicast_connection.hpp"
-#include "./unicast_server.hpp"
+#include "./connection.hpp"
+#include "./server.hpp"
 
 void UnicastConnection::unicast(
     std::string const & receiverId,

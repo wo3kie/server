@@ -1,5 +1,5 @@
-#include "./log_connection.hpp"
-#include "./log_server.hpp"
+#include "./connection.hpp"
+#include "./server.hpp"
 
 void LogConnection::log(
     char const * const message,

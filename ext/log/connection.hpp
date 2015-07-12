@@ -1,7 +1,7 @@
 #ifndef _LOG_CONNECTION_HPP_
 #define _LOG_CONNECTION_HPP_
 
-#include "../core/connection.hpp"
+#include "../../core/connection.hpp"
 
 class LogConnection
     : virtual public Connection

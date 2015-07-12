@@ -1,9 +1,9 @@
 #ifndef _BROADCAST_SERVER_HPP_
 #define _BROADCAST_SERVER_HPP_
 
-#include "../core/server.hpp"
+#include "../../core/server.hpp"
 
-#include "./broadcast_connection.hpp"
+#include "./connection.hpp"
 
 class BroadcastServer
     : virtual public Server
