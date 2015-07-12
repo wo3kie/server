@@ -1,27 +1,17 @@
 #ifndef _BROADCAST_CONNECTION_HPP_
 #define _BROADCAST_CONNECTION_HPP_
 
-#include "../../core/connection.hpp"
+#include "./connection.hxx"
+#include "./server.hpp"
 
-class BroadcastConnection
-    : virtual public Connection
+void BroadcastConnection::broadcast(
+    char const * const message,
+    std::size_t const size
+)
 {
-public:
-
-    BroadcastConnection(
-        asio::io_service & ioService,
-        IServer * server,
-        ITaskPtr task
-    )
-        : Connection( ioService, server, task ) 
-    {
-    }
-
-    void broadcast(
-        char const * const message,
-        std::size_t const size
-    );
-};
+    auto const broadcastServer = dynamic_cast< BroadcastServer * >( m_server );
+    broadcastServer->broadcast( shared_from_this(), message, size );
+}
 
 #endif
 

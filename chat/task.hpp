@@ -5,7 +5,6 @@
 #include <sstream>
 #include <string>
 
-#include "../core/iconnection.hpp"
 #include "../core/itask.hpp"
 
 #include "./connection.hpp"

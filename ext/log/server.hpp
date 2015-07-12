@@ -3,7 +3,7 @@
 
 #include "../../core/server.hpp"
 
-#include "./connection.hpp"
+#include "./connection.hxx"
 
 class LogServer
     : virtual public Server

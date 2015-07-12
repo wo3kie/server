@@ -1,27 +1,17 @@
 #ifndef _STATE_CONNECTION_HPP_
 #define _STATE_CONNECTION_HPP_
 
-#include "../../core/connection.hpp"
+#include "./connection.hpp"
+#include "./server.hpp"
 
 template<
     typename TState
 >
-class StateConnection
-    : virtual public Connection
+TState & StateConnection< TState >::getState()
 {
-public:
-
-    StateConnection(
-        asio::io_service & ioService,
-        IServer * server,
-        ITaskPtr task
-    )
-        : Connection( ioService, server, task ) 
-    {
-    }
-
-    TState & getState();
-};
+    auto const stateServer = dynamic_cast< StateServer< TState > * >( m_server );
+    return stateServer->getState();
+}
 
 #endif
 

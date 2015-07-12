@@ -27,7 +27,3 @@ Please run server and client
 * sign + client_sign  
 Each directory has 'readme' file for more details.
 
-## .tpp file extension in vim
-Insert line below into ~/.vimrc  
-`autocmd BufNewFile,BufReadPost *.ino,*.pde set filetype=cpp`
-

@@ -1,42 +1,18 @@
 #ifndef _UNICAST_CONNECTION_HPP_
 #define _UNICAST_CONNECTION_HPP_
 
-#include "../../core/connection.hpp"
+#include "./connection.hxx"
+#include "./server.hpp"
 
-class UnicastConnection
-    : virtual public Connection
+void UnicastConnection::unicast(
+    std::string const & receiverId,
+    char const * const message,
+    std::size_t const size
+)
 {
-public:
-
-    UnicastConnection(
-        asio::io_service & ioService,
-        IServer * server,
-        ITaskPtr task
-    )
-        : Connection( ioService, server, task ) 
-    {
-    }
-
-    void unicast(
-        std::string const & receiverId,
-        char const * const message,
-        std::size_t const size
-    );
-
-    void setId(
-        std::string const & id
-    )
-    {
-        m_id = id;
-    }
-
-    std::string const & getId() const
-    {
-        return m_id;
-    }
-
-    std::string m_id;
-};
+    auto const unicastServer = dynamic_cast< UnicastServer * >( m_server );
+    unicastServer->unicast( shared_from_this(), receiverId, message, size );
+}
 
 #endif
 

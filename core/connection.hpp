@@ -9,6 +9,7 @@
     #include <boost/asio/ssl.hpp>
 #endif
 
+#include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
 #include "./iconnection.hpp"

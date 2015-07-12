@@ -3,7 +3,7 @@
 
 #include "../../core/server.hpp"
 
-#include "./connection.hpp"
+#include "./connection.hxx"
 
 class BroadcastServer
     : virtual public Server

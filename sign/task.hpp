@@ -16,7 +16,6 @@
 #include <openssl/sha.h>
 #include <openssl/ssl.h>
 
-#include "../core/iconnection.hpp"
 #include "../core/itask.hpp"
 
 #include "./connection.hpp"

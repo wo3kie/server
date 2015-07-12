@@ -3,6 +3,12 @@
 
 #include <string>
 
+#include <boost/asio.hpp>
+
+#ifdef SERVER_SSL
+    #include <boost/asio/ssl.hpp>
+#endif
+
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -10,6 +16,7 @@ namespace asio = boost::asio;
 namespace ip = asio::ip;
 namespace placeholders = asio::placeholders;
 namespace sys = boost::system;
+
 #ifdef SERVER_SSL
     namespace ssl = asio::ssl;
 #endif

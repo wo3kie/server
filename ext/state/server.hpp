@@ -3,7 +3,7 @@
 
 #include "../../core/server.hpp"
 
-#include "./connection.hpp"
+#include "./connection.hxx"
 
 template<
     typename TState
