@@ -1,9 +1,9 @@
 include ./common.mk
 
-APPS=client_console chat echo
+APPS=examples/client_console examples/chat examples/echo
 
 ifeq ($(SSL),1)
-APPS+=client_sign sign
+APPS+=examples/client_sign examples/sign
 endif
 
 .PHONY: all
@@ -22,7 +22,7 @@ clean:
 
 .PHONY: pem
 pem:
-	$(MAKE) $@ -C pem
+	$(MAKE) $@ -C examples/pem
 
 .PHONY: depend
 depend:

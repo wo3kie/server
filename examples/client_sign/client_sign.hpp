@@ -1,23 +1,20 @@
-#ifndef _CLIENT_CONSOLE_
-#define _CLIENT_CONSOLE_
+#ifndef _CLIENT_SIGN_
+#define _CLIENT_SIGN_
 
-#include "../core/client.hpp"
+#include <fstream>
 
-struct Writer : Task
+#include "core/client.hpp"
+
+struct WriterSign : Task
 {
-    Writer(
+    WriterSign(
         asio::io_service & ioService,
-
-#ifdef SERVER_SSL
         ssl::stream< ip::tcp::socket > & socket,
-#else
-        ip::tcp::socket & socket,
-#endif
-
         int argc,
         char* argv[]
     )
         : Task( ioService, socket )
+        , m_fileName( argv[ 3 ] )
     {
     }
 
@@ -26,52 +23,63 @@ protected:
     void runImpl() override
     {
         auto const onRequestWritten = boost::bind(
-            & Writer::onRequestWritten,
+            & WriterSign::onRequestWritten,
             this,
-            placeholders::error
+            placeholders::error,
+            placeholders::bytes_transferred
         );
 
-        while( std::cin.getline( m_request, m_maxLength ) )
-        {
-            std::size_t const size = strlen( m_request );
+        SHA_CTX ctx;
+        SHA1_Init( & ctx );
 
-            asio::async_write(
-                m_socket,
-                asio::buffer( m_request, size ),
-                onRequestWritten
-            );
+        char buffer[ 4 * 1024 ];
+        std::ifstream fileIn( m_fileName.c_str(), std::ios_base::binary );
+
+        while( fileIn.read( & buffer[ 0 ], sizeof( buffer ) ) )
+        {
+            SHA1_Update( & ctx, & buffer[ 0 ], sizeof( buffer ) );
         }
+            
+        SHA1_Update( & ctx, & buffer[ 0 ], fileIn.gcount() );
+
+        SHA1_Final( (unsigned char*)( & m_request[ 2 ] ), & ctx );
+
+        m_request[ 0 ] = 's';
+        m_request[ 1 ] = ' ';
+
+        asio::async_write(
+            m_socket,
+            asio::buffer( m_request, SHA_DIGEST_LENGTH + 2 ),
+            onRequestWritten
+        );
     }
 
 private:
 
     void onRequestWritten(
-        sys::error_code const & errorCode
+        sys::error_code const & errorCode,
+        int bytesTransferred
     )
     {
         if( errorCode )
         {
-            std::cerr << "Request Write Error: " << errorCode.message() << std::endl;
+            std::cerr << "Request Write Error: " << errorCode.value() << " " << errorCode.message() << std::endl;
         }
     }
 
 private:
 
-    enum { m_maxLength = 1024 + 2 };
+    enum { m_maxLength = 1024 };
     char m_request[ m_maxLength ];
+
+    std::string m_fileName;
 };
 
-struct Reader : Task
+struct ReaderSign : Task
 {
-    Reader(
+    ReaderSign(
         asio::io_service & ioService,
-
-#ifdef SERVER_SSL
         ssl::stream< ip::tcp::socket > & socket,
-#else
-        ip::tcp::socket & socket,
-#endif
-
         int argc,
         char* argv[]
     )
@@ -84,7 +92,7 @@ protected:
     void runImpl() override
     {
         auto const onResponseRead = boost::bind(
-            & Reader::onResponseRead,
+            & ReaderSign::onResponseRead,
             this,
             placeholders::error,
             placeholders::bytes_transferred
@@ -109,13 +117,8 @@ private:
         }
         else
         {
-            std::cout << "> ";
             std::cout.write( m_response, bytesTransferred );
-            std::cout << std::endl;
-
-            m_ioService.post(
-                boost::bind( & Reader::runImpl, this )
-            );
+            std::flush( std::cout );
         }
     }
 

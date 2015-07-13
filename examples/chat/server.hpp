@@ -1,9 +1,9 @@
 #ifndef _CHAT_SERVER_HPP_
 #define _CHAT_SERVER_HPP_
 
-#include "../ext/unicast/server.hpp"
-#include "../ext/log/server.hpp"
-#include "../ext/broadcast/server.hpp"
+#include "ext/unicast/server.hpp"
+#include "ext/log/server.hpp"
+#include "ext/broadcast/server.hpp"
 
 #include "./task.hpp"
 #include "./connection.hpp"

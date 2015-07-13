@@ -5,7 +5,7 @@
 #include <sstream>
 #include <string>
 
-#include "../core/itask.hpp"
+#include "core/itask.hpp"
 
 #include "./connection.hpp"
 

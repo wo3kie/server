@@ -5,8 +5,8 @@
 #include <sstream>
 #include <string>
 
-#include "../core/iconnection.hpp"
-#include "../core/itask.hpp"
+#include "core/iconnection.hpp"
+#include "core/itask.hpp"
 
 class EchoTask
     : public ITask

@@ -1,9 +1,9 @@
 #ifndef _CHAT_CONNECTION_HPP_
 #define _CHAT_CONNECTION_HPP_
 
-#include "../ext/unicast/connection.hpp"
-#include "../ext/broadcast/connection.hpp"
-#include "../ext/log/connection.hpp"
+#include "ext/unicast/connection.hpp"
+#include "ext/broadcast/connection.hpp"
+#include "ext/log/connection.hpp"
 
 struct ChatConnection
     : public UnicastConnection

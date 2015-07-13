@@ -1,7 +1,7 @@
 #ifndef _ECHO_SERVER_HPP_
 #define _ECHO_SERVER_HPP_
 
-#include "../core/server.hpp"
+#include "core/server.hpp"
 
 #include "./task.hpp"
 

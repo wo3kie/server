@@ -1,11 +1,13 @@
 SSL:=1
 
-include ../common.mk
+include ../../common.mk
 
 SRCS=$(shell ls *.cpp)
 HDRS=$(shell ls *.hpp)
 OBJS=$(subst .cpp,.o,$(SRCS))
 APPS=$(subst .cpp,,$(SRCS))
+
+CXXFLAGS+=-I../..
 
 .PHONY: all
 all: $(APPS)
