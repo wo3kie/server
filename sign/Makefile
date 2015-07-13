@@ -18,5 +18,5 @@ clean:
 depend: $(SRCS_SSL) $(SRCS)
 	$(CXX) $(CXXFLAGS) -MM $^ > .makefile.dep
 
-include .makefile.dep
+-include .makefile.dep
 

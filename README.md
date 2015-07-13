@@ -25,5 +25,9 @@ Please run server and client
 * echo + client_console
 * chat + client_console
 * sign + client_sign  
-Each directory has 'readme' file for more details.
+There is 'readme' file in each directory. See it for more details.
+
+## Tutorial
+Please find './tutorial' directory with a detailed description how
+to create your own server and how to run it.
 

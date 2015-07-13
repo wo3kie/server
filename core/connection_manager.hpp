@@ -17,7 +17,7 @@ public:
 
     template< typename Function, class... Args >
     void forEach(
-        Function&& func,
+        Function && func,
         Args && ...args
     );
 
@@ -47,7 +47,7 @@ template<
     class... Args
 >
 void ConnectionManager::forEach(
-    Function&& func,
+    Function && func,
     Args && ...args
 )
 {
