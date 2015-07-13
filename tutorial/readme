@@ -1,0 +1,42 @@
+In the simpliest case to create running server you need to create your Task class and
+install it in the Server. In order to do it you have to override 'IServer::createTask'
+function. That is all! Please find example/echo as an example.
+
+
+                ------{uses}------           ------{uses}------
+               v                  \         v                  \
+         IServer <>--{contains}-- IConnection <>--{contains}--ITask
+            ^                          ^                        ^
+            |                          |                        |
+         Server                   Connection                    |
+            ^                                                   |
+            |                                                   |
+         MyServer                                             MyTask
+         createTask()
+
+
+However you may need to use some server's additional features, like broadcast, unicast,
+logging or server's state. Then you have to implement not only Server and Task but 
+also a Connection. Please find example/chat as an example.
+
+
+                ------{uses}------           ------{uses}------
+               v                  \         v                  \
+         IServer <>--{contains}-- IConnection <>--{contains}--ITask
+            ^                          ^                        ^
+            |                          |                        |
+         Server                   Connection                    |
+          ^  ^                     ^      ^                     |
+         /    \                   /        \                    |
+ ServerExt1  ServerExt2  ConnectionExt1  ConnectionExt2         |
+ doIt()      doThat()    doIt()          doThat()               |
+        ^     ^                   ^        ^                    |
+         \   /                     \      /                     |
+       MyServer                   MyConnection                MyTask
+
+
+See ./server.hpp to see how to create your server.
+For connection please look at ./connection.hpp.
+How to define task you can learn from ./task.hpp.
+./main.cpp is about how to run everything together.
+

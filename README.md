@@ -20,20 +20,13 @@ make
 or  
 make SSL=1
 
-## examples
-Please run server and client  
-* echo + client_console  
-* chat + client_console  
-* sign + client_sign  
-There is 'readme' file in each directory. See it for more details.
-
 ## Tutorial
 Please find './tutorial' directory with a detailed description how
 to create your own server and how to run it.
 
 ## Content
 - core - basic framework to create server, connection and task  
-- examples
+- example
     - chat - server for chatting  
     - client_console - line based client, use it together with: chat, echo  
     - client_sign - simple client to work with signing server. It allows you to sign a file, get public key from server and offline - verification of signature  

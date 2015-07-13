@@ -1,0 +1,31 @@
+Usage         
+
+    Console1
+    $ ./echo 12345
+
+        Console2
+        $ cd ../client_console
+
+        $ ./client_console 12345
+        test
+        > test
+
+
+Class diagram
+
+
+            ------{uses}------           ------{uses}------
+           v                  \         v                  \
+     IServer <>--{contains}-- IConnection <>--{contains}--ITask
+        ^                          ^                        ^
+        |                          |                        |
+     Server                   Connection                    |
+        ^                                                   |
+        |                                                   |
+     EchoServer                                           EchoTask
+     createTask()                                         getStartAction()
+                                                          parse()
+                                                          parseError()
+                                                          process()
+
+
