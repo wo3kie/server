@@ -1,4 +1,4 @@
-// This include is required
+// This include is required.
 #include "./server.hpp"
 
 int main( int argc, char* argv[] )

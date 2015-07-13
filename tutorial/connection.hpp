@@ -5,7 +5,7 @@
 // directory.
 //
 // Because your task can not call server's methods directly every time you extend a
-// server you have to extend connection as well.
+// server you have to extend a connection as well.
 
 //
 //        ------{uses}------           ------{uses}------
@@ -33,11 +33,11 @@
 
 #include "../ext/.../connection.hpp"
 
-// Create your Connection class here
+// Create your Connection class here.
 struct MyConnection
     : public ConnectionExt
 
-    // Create constructor here. No more method are required
+    // Create constructor here. No more method are required.
     MyConnection(
         asio::io_service & ioService,
         IServer * server,
@@ -45,7 +45,7 @@ struct MyConnection
     )
         // Because between Connection and ConnectionExt there is a virtual inheritance
         // you have to call Connection class constructor explicitly in addition to
-        // ConnectionExt
+        // ConnectionExt.
         : Connection( ioService, server, task )
         , ConnectionExt( ioService, server, task )
     {
