@@ -18,56 +18,56 @@ public:
     {
     }
 
-    // This function is called at the beginnig of processing. It says to a Server what
-    // first action should be. Do you want to read some data at the beginning, or you
-    // want to write something immidiately after a connection is established?
+    // This function is called after a connection is established. It says to a Server
+    // what a first action should be. You can pick between reading or writing.
     IConnection::Action getStartAction() const
     {
-        // If you want read some data at the beginning return 'Read'.
-        // The next function call will be 'parse'
+        // Return 'Read' if you want to read some data initially. 'parse' function will
+        // be called as next.
         return IConnection::Action::Read;
 
-        // It is not forbidden however it makes no sense here.
-        // If returned the next function call will be 'parseError'
+        // It is not forbidden however it makes no sense here. If you return
+        // 'ReadError' then 'parseError' function will be called as next.
         return IConnection::Action::ReadError;
 
-        // If you do not want to read any data return 'Process'.
-        // The next function call will be 'process'
+        // Return 'Process' if you want to skip reading and write some data instead.
+        // As a result 'process' function will be called as next.
         return IConnection::Action::Process;
     }
 
-    // This function is called every time there are new incoming data to a server
+    // This function is called every time there are new incoming data
     IConnection::Action parse(
         char const * const buffer,
         std::size_t const bytesTransferred
     )
     {
-        // If you want read more data return 'Read'. It may happen that request
-        // is very huge and will not be transported in one chunk. If returned
-        // the next function call will be 'parse' again with a new chunk of data
+        // It may happen that a request is very big and will not be transported in one
+        // chunk. If you still want to read some more data return 'Read'. As a result
+        // 'parse' function will be called again with a new chunk of data.
         return IConnection::Action::Read;
 
-        // If you find data incorrect return 'ReadError'. If returned the next
-        // function call will be 'parseError'
+        // If you find your data incorrect return 'ReadError'. As a result 'parseError'
+        // function will be called next.
         return IConnection::Action::ReadError;
 
-        // If you read all required data and everything is fine return 'Process'.
-        // If returned the next function call will be 'process'
+        // If you have read all your required data and everything is fine return
+        // 'Process'. As a result 'process' function will be called next.
         return IConnection::Action::Process;
     }
 
-    // This function is called everytime you return 'IConnection::Action::ReadError'
+    // This function is called everytime you have returned
+    // 'IConnection::Action::ReadError'
     void parseError()
     {
     }
 
-    // This function is called everytime you return 'IConnection::Action::Process'
+    // This function is called everytime you have returned 'IConnection::Action::Process'
     void process()
     {
         // This is good place to put your logic here
     
         // You can cast IConnection to your connection class and use its extended
-        // interface IConnection* -> MyConnection*
+        // interface
         auto const myConnection
             = dynamic_cast< MyConnection * >( m_connection );
 
@@ -77,7 +77,7 @@ public:
             strlen( "response" )
         );
 
-        // Unless you do not call read again your connection will be closed
+        // Unless you do not call 'read' again your connection will be closed
         m_connection->read();
     }
 };
