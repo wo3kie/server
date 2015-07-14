@@ -29,9 +29,7 @@ to create your own server and how to run it.
 - example
     - chat - server for chatting  
     - client_console - line based client, use it together with: chat, echo  
-    - client_sign - simple client to work with signing server. It allows you to sign a file, get public key from server and offline - verification of signature  
-    - pem - directory with public/private keys and certificates  
-    - sign - server for signing a message, use it together with client_sign. It allows you to sign a message and get a public key  
+    - echo - simple server for echo  
 - ext - contains extensions for a server  
     - broadcast - send a message for everyone  
     - log - print a message on server's console  
