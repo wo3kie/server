@@ -1,8 +1,8 @@
 #ifndef _MY_SERVER_HPP_
 #define _MY_SERVER_HPP_
 
-// Extensions can improve your server functionality. You can find them in 'server/ext'
-// directory.
+// Plugins can improve your server functionality. You can find them in
+// 'server/plugins' directory.
 //
 // Because your task can not call server's methods directly every time you extend
 // a server you have to extend a connection as well.
@@ -16,7 +16,7 @@
 // Server                   Connection                    |
 //    ^                          ^                        |
 //    |                          |                        |
-// ServerExt                ConnectionExt                 |
+// ServerPlugin             ConnectionPlugin              |
 // doIt()                   doIt()                        |
 //    ^                          ^                        |
 //    |                          |                        |
@@ -31,7 +31,7 @@
 //  |                        |                          |
 //
 
-#include "../ext/.../server.hpp"
+#include "../plugin/.../server.hpp"
 
 // These includes are required.
 #include "./task.hpp"

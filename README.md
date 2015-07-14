@@ -24,8 +24,8 @@ make SSL=1
 Please find './tutorial/server' directory with a detailed description how to create your  
 own server and how to run it.
 
-Inside './tutorial/extension' you can find a description how to create your own server's  
-extension.
+Inside './tutorial/plugins' you can find a description how to create your own server's  
+plugin.
 
 ## Content
 - core - basic framework to create server, connection and task  
@@ -33,10 +33,12 @@ extension.
     - chat - server for chatting  
     - client_console - line based client, use it together with: chat, echo  
     - echo - simple server for echo  
-- ext - contains extensions for a server  
+- plugin - contains plugins for a server  
     - broadcast - send a message for everyone  
     - log - print a message on server's console  
     - state - make data in server shared between all connections  
     - unicast - initially set an id for a connection and then sent a message to a connection identifying it by id  
-- tutorial - an example how to create a server
+- tutorial - documentation
+    - server - tutotial how to create your server
+    - plugin - tutorial how to extend server's functionality
 

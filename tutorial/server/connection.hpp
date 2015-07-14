@@ -1,11 +1,11 @@
 #ifndef _MY_CONNECTION_HPP_
 #define _MY_CONNECTION_HPP_
 
-// Extensions can extend your server functionality. You can find them  in 'server/ext'
-// directory.
+// Plugins can extend your server functionality. You can find them in
+// 'server/plugin' directory.
 //
-// Because your task can not call server's methods directly every time you extend a
-// server you have to extend a connection as well.
+// Because your task can not call server's methods directly every time
+// you extend a server you have to extend a connection as well.
 
 //
 //        ------{uses}------           ------{uses}------
@@ -16,7 +16,7 @@
 // Server                   Connection                    |
 //    ^                          ^                        |
 //    |                          |                        |
-// ServerExt                ConnectionExt                 |
+// ServerPlugin             ConnectionPlugin              |
 // doIt()                   doIt()                        |
 //    ^                          ^                        |
 //    |                          |                        |
@@ -31,11 +31,11 @@
 //  |                        |                          |
 //
 
-#include "../ext/.../connection.hpp"
+#include "../plugin/.../connection.hpp"
 
 // Create your Connection class here.
 struct MyConnection
-    : public ConnectionExt
+    : public ConnectionPlugin
 
     // Create constructor here. No more method are required.
     MyConnection(
@@ -43,11 +43,11 @@ struct MyConnection
         IServer * server,
         ITaskPtr task
     )
-        // Because between Connection and ConnectionExt there is a virtual inheritance
-        // you have to call Connection class constructor explicitly in addition to
-        // ConnectionExt.
+        // Because between Connection and ConnectionPlugin there is a virtual
+        // inheritance you have to call Connection class constructor explicitly
+        // in addition to ConnectionPlugin.
         : Connection( ioService, server, task )
-        , ConnectionExt( ioService, server, task )
+        , ConnectionPlugin( ioService, server, task )
     {
     }
 };

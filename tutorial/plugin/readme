@@ -1,17 +1,17 @@
 See 'connection.hxx' how to create your connection. This file should be used only
-    interlally to resolve circular dependency between Server and Connection.
+    internally to resolve circular dependency between Server and Connection.
 
                             --+
-    connection.hxx            | private
+    connection.hxx            | internal only
       |        \            --+
       |         v           --+
       |      server.hpp       |
       |         /             | public
-      |        v              |
+      v        v              |
     connection.hpp            |
                             --+
 
 'connection.hpp' is a file to be used externally in your projects.
 
-How to define your server you can learn from 'server.hpp'
+How to define your server you can learn from 'server.hpp'.
 
