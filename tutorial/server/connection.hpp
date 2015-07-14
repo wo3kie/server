@@ -37,15 +37,15 @@
 struct MyConnection
     : public ConnectionPlugin
 
-    // Create constructor here. No more method are required.
+    // Create constructor here. No more methods are required.
     MyConnection(
         asio::io_service & ioService,
         IServer * server,
         ITaskPtr task
     )
-        // Because between Connection and ConnectionPlugin there is a virtual
-        // inheritance you have to call Connection class constructor explicitly
-        // in addition to ConnectionPlugin.
+        // Because there is a virtual inheritance between Connection
+        // and ConnectionPlugin you have to call Connection class
+        // constructor explicitly in addition to ConnectionPlugin.
         : Connection( ioService, server, task )
         , ConnectionPlugin( ioService, server, task )
     {

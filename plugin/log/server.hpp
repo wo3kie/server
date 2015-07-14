@@ -5,10 +5,9 @@
 
 #include "./connection.hxx"
 
-class LogServer
+struct LogServer
     : virtual public Server
 {
-public:
     LogServer( std::string const & port )
         : Server( port )
     {
@@ -25,6 +24,7 @@ public:
     }
 };
 
+inline
 void LogServer::log(
     char const * const message,
     std::size_t const size

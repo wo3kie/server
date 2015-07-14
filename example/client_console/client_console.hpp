@@ -8,11 +8,11 @@ struct Writer : Task
     Writer(
         asio::io_service & ioService,
 
-#ifdef SERVER_SSL
-        ssl::stream< ip::tcp::socket > & socket,
-#else
-        ip::tcp::socket & socket,
-#endif
+        #ifdef SERVER_SSL
+            ssl::stream< ip::tcp::socket > & socket,
+        #else
+            ip::tcp::socket & socket,
+        #endif
 
         int argc,
         char* argv[]
@@ -66,11 +66,11 @@ struct Reader : Task
     Reader(
         asio::io_service & ioService,
 
-#ifdef SERVER_SSL
-        ssl::stream< ip::tcp::socket > & socket,
-#else
-        ip::tcp::socket & socket,
-#endif
+        #ifdef SERVER_SSL
+            ssl::stream< ip::tcp::socket > & socket,
+        #else
+            ip::tcp::socket & socket,
+        #endif
 
         int argc,
         char* argv[]

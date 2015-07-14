@@ -1,5 +1,5 @@
-#ifndef _ISERVER_HPP_
-#define _ISERVER_HPP_
+#ifndef _CORE_ISERVER_HPP_
+#define _CORE_ISERVER_HPP_
 
 #include <boost/shared_ptr.hpp>
 

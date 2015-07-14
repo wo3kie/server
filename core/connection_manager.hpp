@@ -1,5 +1,5 @@
-#ifndef _CONNECTION_MANAGER_HPP_
-#define _CONNECTION_MANAGER_HPP_
+#ifndef _CORE_CONNECTION_MANAGER_HPP_
+#define _CORE_CONNECTION_MANAGER_HPP_
 
 #include <set>
 
@@ -18,14 +18,14 @@ public:
     template< typename Function, class... Args >
     void forEach(
         Function && func,
-        Args && ...args
+        Args &&... args
     );
 
     template< typename Predicate, typename Function, class... Args >
     void forEachIf(
         Predicate && predicate,
         Function && func,
-        Args && ...args
+        Args &&... args
     );
 
     void add(
@@ -48,7 +48,7 @@ template<
 >
 void ConnectionManager::forEach(
     Function && func,
-    Args && ...args
+    Args &&... args
 )
 {
     boost::lock_guard< boost::mutex > lock( m_mutex );
@@ -67,7 +67,7 @@ template<
 void ConnectionManager::forEachIf(
     Predicate && predicate,
     Function && func,
-    Args && ...args
+    Args &&... args
 )
 {
     boost::lock_guard< boost::mutex > lock( m_mutex );
@@ -81,6 +81,7 @@ void ConnectionManager::forEachIf(
     }
 }
 
+inline
 void ConnectionManager::add(
     IConnectionPtr & connection
 )
@@ -90,6 +91,7 @@ void ConnectionManager::add(
     m_connections.insert( connection ); 
 }
 
+inline
 void ConnectionManager::remove(
     IConnectionPtr const & connection
 )
@@ -98,7 +100,8 @@ void ConnectionManager::remove(
 
     auto const pos = m_connections.find( connection );
 
-    if( pos != m_connections.end() ){
+    if( pos != m_connections.end() )
+    {
         m_connections.erase( pos );
     }
 }

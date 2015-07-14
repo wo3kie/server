@@ -18,8 +18,8 @@ public:
     {
     }
 
-    // This function is called after a connection is established. It says to the Server
-    // what first action should be. You can pick between reading or writing.
+    // This function is called after a connection is established. It says to a Server
+    // what its first action should be. You can pick between reading or writing.
     IConnection::Action getStartAction() const
     {
         // Return 'Read' if you want to read some data initially. As a result 'parse'
@@ -38,15 +38,15 @@ public:
     )
     {
         // It may happen that a request is very big and will not be transported in one
-        // chunk. If you still want to read some more data return 'Read'. As a result
-        // 'parse' function will be called again with a new chunk of data.
+        // chunk. If you want to read some more data return 'Read'. As a result 'parse'
+        // function will be called again with a new chunk of data.
         return IConnection::Action::Read;
 
-        // If you find your data incorrect return 'ReadError'. As a result 'parseError'
-        // function will be called next.
+        // If you find incomong data incorrect return 'ReadError'. As a result
+        // 'parseError' function will be called next.
         return IConnection::Action::ReadError;
 
-        // If you have read all your required data and everything is fine return
+        // If you have read all incoming data and everything is fine return
         // 'Process'. As a result 'process' function will be called next.
         return IConnection::Action::Process;
     }
@@ -63,8 +63,7 @@ public:
         // This is a good place to put your logic here.
     
         // You can cast IConnection to your connection class and use its interface.
-        auto const myConnection
-            = dynamic_cast< MyConnection * >( m_connection );
+        auto const myConnection = dynamic_cast< MyConnection * >( m_connection );
 
         // At the end you can send some data back.
         m_connection->response(

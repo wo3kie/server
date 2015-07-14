@@ -33,6 +33,7 @@ plugin.
     - chat - server for chatting  
     - client_console - line based client, use it together with: chat, echo  
     - echo - simple server for echo  
+    - pem - public/private key and certificates for secure connection (make SSL=1)
 - plugin - contains plugins for a server  
     - broadcast - send a message for everyone  
     - log - print a message on server's console  

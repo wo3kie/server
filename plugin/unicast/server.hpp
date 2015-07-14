@@ -5,10 +5,9 @@
 
 #include "./connection.hxx"
 
-class UnicastServer
+struct UnicastServer
     : virtual public Server
 {
-public:
     UnicastServer( std::string const & port )
         : Server( port )
     {
@@ -27,6 +26,7 @@ public:
     }
 };
 
+inline
 void UnicastServer::unicast(
     IConnectionPtr const & sender,
     std::string const & receiverId,
@@ -39,7 +39,7 @@ void UnicastServer::unicast(
         return receiverId == dynamic_cast< UnicastConnection * >( connectionPtr.get() )->getId();
     };
 
-    auto sendMessage = [ this, & sender, & size, & message ]( IConnectionPtr const & connectionPtr )
+    auto sendMessage = [ this, & size, & message ]( IConnectionPtr const & connectionPtr )
     {
         connectionPtr->response( message, size );
     };

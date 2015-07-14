@@ -1,24 +1,17 @@
-#ifndef _SERVER_HPP_
-#define _SERVER_HPP_
+#ifndef _CORE_SERVER_HPP_
+#define _CORE_SERVER_HPP_
 
 #include <string>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
 
 #include "./connection.hpp"
 #include "./connection_manager.hpp"
 #include "./iserver.hpp"
-
-namespace asio = boost::asio;
-namespace ip = asio::ip;
-namespace placeholders = asio::placeholders;
-namespace sys = boost::system;
 
 class Server
     : public IServer
@@ -70,12 +63,16 @@ protected:
     #ifdef SERVER_SSL
 
         virtual void sslInit();
+
         virtual int getSslOptions();
+        
         virtual std::string passwordCallback(
             std::size_t size,
             std::size_t purppose
         );
+        
         virtual std::string getCertificateChainFileName();
+        
         virtual std::string getPrivateKeyFileName();
 
     #endif
@@ -90,11 +87,13 @@ protected:
     IConnectionPtr m_newConnection;
     ConnectionManager m_connectionManager;
 
-#ifdef SERVER_SSL
-    ssl::context m_sslContext;
-#endif
+    #ifdef SERVER_SSL
+        ssl::context m_sslContext;
+    #endif
+
 };
 
+inline
 Server::Server(
     std::string const & port
 )
@@ -109,6 +108,7 @@ Server::Server(
 {
 }
 
+inline
 void Server::setupSignals()
 {
     m_signals.add( SIGINT );
@@ -120,26 +120,31 @@ void Server::setupSignals()
     );
 }
 
+inline
 std::string Server::getLocalHostIp()
 {
     return "127.0.0.1";
 }
 
+inline
 std::string Server::getPort()
 {
     return m_port;
 }
 
+inline
 bool Server::reuseAddress()
 {
     return true;
 }
 
+inline
 IConnectionPtr Server::createConnection()
 {
     return IConnectionPtr( new Connection( m_ioService, this, createTask() ) );
 }
 
+inline
 ip::tcp::endpoint Server::resolve() 
 {
     ip::tcp::resolver resolver( m_ioService );
@@ -147,11 +152,13 @@ ip::tcp::endpoint Server::resolve()
     return * resolver.resolve( query );
 }
 
+inline
 unsigned Server::getThreadNumber() 
 {
     return boost::thread::hardware_concurrency();
 }
 
+inline
 void Server::runThreadPool()
 {
     boost::thread_group threadGroup; 
@@ -173,6 +180,7 @@ void Server::runThreadPool()
     threadGroup.join_all();
 }
 
+inline
 void Server::run()
 {
     setupSignals();
@@ -184,22 +192,24 @@ void Server::run()
     m_acceptor.bind( endpoint );
     m_acceptor.listen();
 
-#ifdef SERVER_SSL
-    sslInit();
-#endif
+    #ifdef SERVER_SSL
+        sslInit();
+    #endif
 
     startAccept();
 
     runThreadPool();
 }
 
+inline
 void Server::disconnect(
-    IConnectionPtr const & sender
+    IConnectionPtr const & connection
 )
 {
-    m_connectionManager.remove( sender );
+    m_connectionManager.remove( connection );
 }
 
+inline
 void Server::startAccept()
 {
     m_newConnection = createConnection();
@@ -222,31 +232,39 @@ void Server::startAccept()
     );
 }
 
+inline
 void Server::onAccepted(
     sys::error_code const & errorCode
 )
 {
-    if( ! errorCode )
+    if( errorCode )
+    {
+        std::cerr << "On Accepted Error: " << errorCode.message() << std::endl;
+    }
+    else
     {
         m_connectionManager.add( m_newConnection );
-
         m_newConnection->start( m_newConnection->getStartAction() );
     }
 
     startAccept();
 }
 
+inline
 void Server::stop()
 {
     m_ioService.stop();
 }
 
 #ifdef SERVER_SSL
+
+    inline
     ssl::context & Server::getSSLContext()
     {
         return m_sslContext;
     }
 
+    inline
     int Server::getSslOptions()
     {
         return ssl::context::default_workarounds
@@ -254,6 +272,7 @@ void Server::stop()
             | ssl::context::single_dh_use;
     }
 
+    inline
     std::string Server::passwordCallback(
         std::size_t size,
         std::size_t purppose
@@ -262,20 +281,22 @@ void Server::stop()
         return "test";
     }
 
+    inline
     std::string Server::getCertificateChainFileName()
     {
         return "../pem/server.pem";
     }
         
+    inline
     std::string Server::getPrivateKeyFileName()
     {
         return "../pem/server-key.pem";
     }
 
+    inline
     void Server::sslInit()
     {
         m_sslContext.set_options( getSslOptions() );
-
 
         m_sslContext.set_password_callback(
             [ & ]( std::size_t size, std::size_t purpose )
@@ -287,6 +308,7 @@ void Server::stop()
         m_sslContext.use_certificate_chain_file( getCertificateChainFileName() );
         m_sslContext.use_private_key_file( getPrivateKeyFileName(), ssl::context::pem );
     }
+
 #endif // SERVER_SSL
 
 #endif // _SERVER_HPP_

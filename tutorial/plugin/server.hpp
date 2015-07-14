@@ -7,11 +7,9 @@
 // This include is required.
 #include "./connection.hxx"
 
-class MyServer
+struct MyServer
     : virtual public Server
 {
-public:
-
     // Such a simple constructor is enough.
     MyServer( std::string const & port )
         : Server( port )
@@ -28,7 +26,6 @@ public:
     void myFunction()
     {
     }
-
 };
 
 #endif

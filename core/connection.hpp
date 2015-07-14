@@ -1,5 +1,5 @@
-#ifndef _CONNECTION_HPP_
-#define _CONNECTION_HPP_
+#ifndef _CORE_CONNECTION_HPP_
+#define _CORE_CONNECTION_HPP_
 
 #include <string>
 
@@ -48,8 +48,6 @@ public:
 
     void disconnect();
 
-public: // api
-
     void read() override;
 
     void response(
@@ -57,10 +55,7 @@ public: // api
         std::size_t const size
     ) override;
 
-    IConnection::Action getStartAction() const
-    {
-        return m_task->getStartAction();
-    }
+    IConnection::Action getStartAction() const;
 
     #ifdef SERVER_SSL
         ssl::stream< asio::ip::tcp::socket > & socket();
@@ -95,6 +90,7 @@ protected:
     #endif
 };
 
+inline
 Connection::Connection( 
     asio::io_service & ioService,
     IServer * server,
@@ -113,14 +109,17 @@ Connection::Connection(
 }
 
 #ifdef SERVER_SSL
+    inline
     ssl::stream< asio::ip::tcp::socket > & Connection::socket()
 #else
+    inline
     ip::tcp::socket & Connection::socket()
 #endif
     {
         return m_socket;
     }
 
+inline
 void Connection::start(
     IConnection::Action const action
 )
@@ -142,6 +141,7 @@ void Connection::start(
     #endif
 }
 
+inline
 void Connection::restart(
     IConnection::Action const action
 )
@@ -181,21 +181,31 @@ void Connection::restart(
     }
 }
 
+inline
+IConnection::Action Connection::getStartAction() const
+{
+    return m_task->getStartAction();
+}
+
+inline
 void Connection::read()
 {
     restart( Action::Read );
 }
 
+inline
 void Connection::parseError()
 {
     m_task->parseError();
 }
 
+inline
 void Connection::process()
 {
     m_task->process();
 }
 
+inline
 void Connection::parse(
     sys::error_code const & errorCode,
     std::size_t const bytesTransferred
@@ -213,6 +223,7 @@ void Connection::parse(
     }
 }
 
+inline
 void Connection::restartAgain(
     sys::error_code const & errorCode,
     IConnection::Action const action
@@ -230,6 +241,7 @@ void Connection::restartAgain(
     }
 }
 
+inline
 void Connection::response(
     char const * const message,
     std::size_t const size
@@ -248,6 +260,7 @@ void Connection::response(
     );
 }
 
+inline
 void Connection::doNothing(
     sys::error_code const & errorCode
 )
@@ -260,12 +273,14 @@ void Connection::doNothing(
     }
 }
 
+inline
 void Connection::stop()
 {
     char const * const message = "Goodbye.";
     response( message, strlen( message ) );
 }
 
+inline
 void Connection::disconnect()
 {
     m_server->disconnect( Connection::shared_from_this() );

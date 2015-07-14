@@ -1,5 +1,5 @@
-#ifndef _CLIENT_HPP_
-#define _CLIENT_HPP_
+#ifndef _CORE_CLIENT_HPP_
+#define _CORE_CLIENT_HPP_
 
 #include <iostream>
 #include <string>
@@ -51,6 +51,7 @@ protected:
     #endif
 };
 
+inline
 Task::Task(
     asio::io_service & ioService,
 
@@ -179,6 +180,7 @@ Client< TReader, TWriter >::Client(
 }
 
 #ifdef SERVER_SSL
+
     template<
         typename TReader,
         typename TWriter
@@ -190,6 +192,7 @@ Client< TReader, TWriter >::Client(
     {
         return preverified;
     }
+
 #endif
 
 template<

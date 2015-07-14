@@ -9,8 +9,7 @@ template<
 >
 TState & StateConnection< TState >::getState()
 {
-    auto const stateServer = dynamic_cast< StateServer< TState > * >( m_server );
-    return stateServer->getState();
+    return dynamic_cast< StateServer< TState > * >( m_server )->getState();
 }
 
 #endif

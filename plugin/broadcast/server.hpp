@@ -5,10 +5,9 @@
 
 #include "./connection.hxx"
 
-class BroadcastServer
+struct BroadcastServer
     : virtual public Server
 {
-public:
     BroadcastServer( std::string const & port )
         : Server( port )
     {
@@ -26,6 +25,7 @@ public:
     }
 };
 
+inline
 void BroadcastServer::broadcast(
     IConnectionPtr const & sender,
     char const * const message,
@@ -37,7 +37,7 @@ void BroadcastServer::broadcast(
         return sender->socket().native_handle() != connectionPtr->socket().native_handle();
     };
 
-    auto sendMessage = [ this, & sender, & size, & message ]( IConnectionPtr const & connectionPtr )
+    auto sendMessage = [ this, & size, & message ]( IConnectionPtr const & connectionPtr )
     {
         connectionPtr->response( message, size );
     };

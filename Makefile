@@ -16,6 +16,10 @@ clean:
 		$(MAKE) $@ -C $$d;\
 	done
 
+.PHONY: pem
+pem:
+	$(MAKE) $@ -C example/pem
+
 .PHONY: depend
 depend:
 	for d in $(APPS);\

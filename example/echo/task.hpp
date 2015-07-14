@@ -8,11 +8,9 @@
 #include "core/iconnection.hpp"
 #include "core/itask.hpp"
 
-class EchoTask
+struct EchoTask
     : public ITask
 {
-public:
-
     EchoTask()
     {
     }
@@ -29,11 +27,13 @@ public:
     void process();
 };
 
+inline
 IConnection::Action EchoTask::getStartAction() const
 {
     return IConnection::Action::Read;
 }
 
+inline
 typename IConnection::Action EchoTask::parse(
     char const * const buffer,
     std::size_t const bytesTransferred
@@ -45,13 +45,13 @@ typename IConnection::Action EchoTask::parse(
     return IConnection::Action::Process;
 }
 
+inline
 void EchoTask::parseError()
 {
-    std::cerr
-        << "Parse error"
-        << std::endl;
+    std::cerr << "Parse error" << std::endl;
 }
 
+inline
 void EchoTask::process()
 {
 }

@@ -1,5 +1,5 @@
-#ifndef _ICONNECTION_HPP_
-#define _ICONNECTION_HPP_
+#ifndef _CORE_ICONNECTION_HPP_
+#define _CORE_ICONNECTION_HPP_
 
 #include <string>
 

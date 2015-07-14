@@ -9,11 +9,9 @@
 
 #include "./connection.hpp"
 
-class ChatTask
+struct ChatTask
     : public ITask
 {
-public:
-
     ChatTask();
 
     IConnection::Action getStartAction() const;
@@ -28,15 +26,18 @@ public:
     void process();
 };
 
+inline
 ChatTask::ChatTask()
 {
 }
 
+inline
 IConnection::Action ChatTask::getStartAction() const
 {
     return IConnection::Action::Read;
 }
 
+inline
 typename IConnection::Action ChatTask::parse(
     char const * const buffer,
     std::size_t const bytesTransferred
@@ -51,11 +52,12 @@ typename IConnection::Action ChatTask::parse(
     {
         std::string id;
         iss >> id;
+
         dynamic_cast< ChatConnection * >( m_connection )->setId( id );
 
         const std::string message = "Hello '" + id + "'.";
-
         m_connection->response( message.c_str(), message.size() );
+
         m_connection->read();
     }
     else if( command == 'b' )
@@ -63,7 +65,11 @@ typename IConnection::Action ChatTask::parse(
         std::string message;
         iss >> message;
 
-        dynamic_cast< ChatConnection * >( m_connection )->broadcast( message.c_str(), message.size() );
+        dynamic_cast< ChatConnection * >( m_connection )->broadcast(
+            message.c_str(),
+            message.size()
+        );
+
         m_connection->read();
     }
     else if( command == 'u' )
@@ -72,7 +78,12 @@ typename IConnection::Action ChatTask::parse(
         std::string message;
         iss >> id >> message;
 
-        dynamic_cast< ChatConnection * >( m_connection )->unicast( id, message.c_str(), message.size() );
+        dynamic_cast< ChatConnection * >( m_connection )->unicast(
+            id,
+            message.c_str(),
+            message.size()
+        );
+
         m_connection->read();
     }
     else if( command == 'd' )
@@ -85,8 +96,10 @@ typename IConnection::Action ChatTask::parse(
         std::string message;
         iss >> message;
 
-        auto const logConnection  = dynamic_cast< LogConnection * >( m_connection );
-        logConnection->log( message.c_str(), message.size() );
+        dynamic_cast< ChatConnection * >( m_connection )->log(
+            message.c_str(),
+            message.size()
+        );
 
         m_connection->read();
     }
@@ -96,6 +109,7 @@ typename IConnection::Action ChatTask::parse(
         iss >> message;
 
         m_connection->response( message.c_str(), message.size() );
+
         m_connection->read();
     }
     else
@@ -103,19 +117,20 @@ typename IConnection::Action ChatTask::parse(
         std::string const message = "Unknown command '" + std::string( 1, command ) + "'.";
 
         m_connection->response( message.c_str(), message.size() );
+        
         m_connection->read();
     }
 
     return IConnection::Action::Process;
 }
 
+inline
 void ChatTask::parseError()
 {
-    std::cerr
-        << "Parse error"
-        << std::endl;
+    std::cerr << "Parse error" << std::endl;
 }
 
+inline
 void ChatTask::process()
 {
 }

@@ -1,12 +1,10 @@
-#ifndef _ITASK_HPP_
-#define _ITASK_HPP_
+#ifndef _CORE_ITASK_HPP_
+#define _CORE_ITASK_HPP_
 
 class IConnection;
 
 struct ITask
 {
-public:
-
     virtual IConnection::Action getStartAction() const = 0;
 
     virtual IConnection::Action parse(
@@ -33,10 +31,12 @@ protected:
     IConnection * m_connection;
 };
 
+inline
 ITask::~ITask()
 {
 }
 
+inline
 void ITask::setConnection(
     IConnection * connection
 )
@@ -44,6 +44,7 @@ void ITask::setConnection(
     m_connection = connection;
 }
 
+inline
 IConnection * ITask::getConnection()
 {
     return m_connection;
