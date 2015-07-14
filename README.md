@@ -21,8 +21,11 @@ or
 make SSL=1
 
 ## Tutorial
-Please find './tutorial' directory with a detailed description how
-to create your own server and how to run it.
+Please find './tutorial/server' directory with a detailed description how to create your  
+own server and how to run it.
+
+Inside './tutorial/extension' you can find a description how to create your own server's  
+extension.
 
 ## Content
 - core - basic framework to create server, connection and task  
