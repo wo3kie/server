@@ -1,5 +1,0 @@
-See ./server.hpp to see how to create your server.
-For connection please look at ./connection.hpp.
-How to define task you can learn from ./task.hpp.
-./main.cpp is about how to run everything together.
-
