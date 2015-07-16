@@ -4,7 +4,6 @@
 #include <string>
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
 
 #include <boost/thread.hpp>
 #include <boost/thread/locks.hpp>
@@ -115,9 +114,15 @@ void Server::setupSignals()
     m_signals.add( SIGTERM );
     m_signals.add( SIGQUIT );
 
-    m_signals.async_wait(
-        boost::bind( & Server::stop, this )
-    );
+    auto const onSignal = [ this ](
+        const sys::error_code& error,
+        int signal_number
+    )
+    {
+        this->stop();
+    };
+
+    m_signals.async_wait( onSignal );
 }
 
 inline
@@ -163,10 +168,10 @@ void Server::runThreadPool()
 {
     boost::thread_group threadGroup; 
 
-    auto const threadBody = boost::bind(
-        & asio::io_service::run,
-        & m_ioService
-    );
+    auto const threadBody = [ this ]()
+    {
+        this->m_ioService.run();
+    };
 
     for(
         unsigned i = 0, threadNumber = getThreadNumber();
@@ -214,11 +219,12 @@ void Server::startAccept()
 {
     m_newConnection = createConnection();
 
-    auto const onAccepted = boost::bind(
-        & Server::onAccepted,
-        this,
-        placeholders::error
-    );
+    auto const onAccepted = [ this ](
+        sys::error_code const & errorCode
+    )
+    {
+        this->onAccepted( errorCode );
+    };
    
     m_acceptor.async_accept(
         

@@ -25,11 +25,13 @@ protected:
 
     void runImpl() override
     {
-        auto const onRequestWritten = boost::bind(
-            & Writer::onRequestWritten,
-            this,
-            placeholders::error
-        );
+        auto const onRequestWritten = [ this ](
+            sys::error_code const & errorCode,
+            size_t const bytesTransferred
+        )
+        {
+            this->onRequestWritten( errorCode );
+        };
 
         while( std::cin.getline( m_request, m_maxLength ) )
         {
@@ -83,12 +85,13 @@ protected:
 
     void runImpl() override
     {
-        auto const onResponseRead = boost::bind(
-            & Reader::onResponseRead,
-            this,
-            placeholders::error,
-            placeholders::bytes_transferred
-        );
+        auto const onResponseRead = [ this ](
+            sys::error_code const & errorCode,
+            size_t const bytesTransferred
+        )
+        {
+            this->onResponseRead( errorCode, bytesTransferred );
+        };
 
         m_socket.async_read_some(
             asio::buffer( m_response, m_maxLength ),
@@ -114,7 +117,7 @@ private:
             std::cout << std::endl;
 
             m_ioService.post(
-                boost::bind( & Reader::runImpl, this )
+                [ this ](){ this->runImpl(); }
             );
         }
     }

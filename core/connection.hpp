@@ -9,7 +9,6 @@
     #include <boost/asio/ssl.hpp>
 #endif
 
-#include <boost/bind.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
 #include "./iconnection.hpp"
@@ -61,7 +60,8 @@ protected:
     );
 
     void disconnectOnError(
-        sys::error_code const & errorCode
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
     );
 
     void parse(
@@ -120,12 +120,14 @@ void Connection::start(
 {
     #ifdef SERVER_SSL
 
-        auto const dispatch = boost::bind(
-            & Connection::dispatch,
-            Connection::shared_from_this(),
-            placeholders::error,
-            action
-        );
+        auto const self = shared_from_this();
+
+        auto const dispatch = [ self, action ](
+            sys::error_code const & errorCode
+        )
+        {
+            self->dispatch( errorCode, action );
+        };
 
         m_socket.async_handshake(
             ssl::stream_base::server,
@@ -198,12 +200,15 @@ void Connection::dispatch(
 
             case Action::Read:
             {
-                auto const parse = boost::bind(
-                    & Connection::parse,
-                    Connection::shared_from_this(),
-                    placeholders::error,
-                    placeholders::bytes_transferred()
-                );
+                auto self = shared_from_this();
+
+                auto const parse = [ self ](
+                    sys::error_code const & errorCode,
+                    std::size_t const bytesTransferred
+                )
+                {
+                    self->parse( errorCode, bytesTransferred );
+                };
 
                 m_socket.async_read_some(
                     asio::buffer( m_buffer, m_maxSize ),
@@ -222,11 +227,15 @@ void Connection::response(
     std::size_t const size
 )
 {
-    auto const continuation = boost::bind(
-        & Connection::disconnectOnError,
-        Connection::shared_from_this(),
-        placeholders::error
-    );
+    auto self = shared_from_this();
+
+    auto const continuation = [ self ](
+        sys::error_code const & errorCode,
+        std::size_t const bytesTransferred
+    )
+    {
+        self->disconnectOnError( errorCode, bytesTransferred );
+    };
 
     asio::async_write(
         m_socket,
@@ -237,7 +246,8 @@ void Connection::response(
 
 inline
 void Connection::disconnectOnError(
-    sys::error_code const & errorCode
+    sys::error_code const & errorCode,
+    std::size_t const bytesTransferred
 )
 {
     if( errorCode )
@@ -258,7 +268,7 @@ void Connection::stop()
 inline
 void Connection::disconnect()
 {
-    m_server->disconnect( Connection::shared_from_this() );
+    m_server->disconnect( shared_from_this() );
 }
 
 #endif

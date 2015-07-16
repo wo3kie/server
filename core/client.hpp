@@ -10,7 +10,6 @@
     #include <boost/asio/ssl.hpp>
 #endif
 
-#include <boost/bind.hpp>
 #include <boost/thread.hpp>
 
 namespace asio = boost::asio;
@@ -142,22 +141,32 @@ Client< TReader, TWriter >::Client(
     ip::tcp::resolver::query query( host, port ); 
 
     #ifdef SERVER_SSL
+        
         m_ctx.load_verify_file( "../pem/ca.pem" );
     
         m_socket.set_verify_mode( ssl::verify_peer );
-        m_socket.set_verify_callback(
-            boost::bind( & Client::verifyCertificate, this, _1, _2 )
-        );
+        
+        auto const verifyCallback = [ this ](
+            bool const preverified,
+            ssl::verify_context & ctx
+        ) -> bool
+        {
+            return this->verifyCertificate( preverified, ctx );
+        };
+
+        m_socket.set_verify_callback( verifyCallback );
+
     #endif
 
     ip::tcp::resolver resolver( m_ioService );
 
-    auto const onResolved = boost::bind(
-        & Client::onResolved,
-        this,
-        placeholders::error,
-        placeholders::iterator
-    );
+    auto const onResolved = [ this ](
+        sys::error_code const & errorCode,
+        ip::tcp::resolver::iterator endpointIterator 
+    )
+    {
+        this->onResolved( errorCode, endpointIterator );
+    };
 
     resolver.async_resolve(
         query,
@@ -166,10 +175,10 @@ Client< TReader, TWriter >::Client(
 
     boost::thread_group threadGroup; 
 
-    auto const threadBody = boost::bind(
-        & asio::io_service::run,
-        & m_ioService
-    );
+    auto const threadBody = [ this ]()
+    {
+        this->m_ioService.run();
+    };
 
     for( unsigned i = 0 ; i < 2 ; ++ i )
     {
@@ -210,11 +219,13 @@ void Client< TReader, TWriter >::onResolved(
     }
     else
     {
-        auto const onConnected = boost::bind(
-            & Client::onConnected,
-            this,
-            placeholders::error
-        );
+        auto const onConnected = [ this ](
+            sys::error_code const & errorCode,
+            ip::tcp::resolver::iterator const endpointIterator 
+        )
+        {
+            this->onConnected( errorCode );
+        };
 
         asio::async_connect(
 
@@ -245,11 +256,13 @@ void Client< TReader, TWriter >::onConnected(
     else
     {
         #ifdef SERVER_SSL
-            auto const onHandShake = boost::bind(
-                & Client::onHandShake,
-                this,
-                placeholders::error
-            );
+
+            auto const onHandShake = [ this ](
+                sys::error_code const & errorCode 
+            )
+            {
+                this->onHandShake( errorCode );
+            };
     
             m_socket.async_handshake(
                 ssl::stream_base::client,
@@ -276,8 +289,13 @@ void Client< TReader, TWriter >::onHandShake(
     }
     else
     {
+        auto const threadBody = [ this ]()
+        {
+            this->m_writer.run();
+        };
+
         m_reader.run();
-        boost::thread( boost::bind( & TWriter::run, m_writer ) ).join();
+        boost::thread( threadBody ).join();
     }
 }
 
