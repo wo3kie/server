@@ -28,23 +28,13 @@ public:
         ITaskPtr task
     );
 
+    IConnection::Action getStartAction() const;
+
     void start(
         Action const action
     );
 
-    void restart(
-        Action const action
-    );
-
-    void stop();
-
     void process();
-
-    void doNothing(
-        sys::error_code const & errorCode
-    );
-
-    void disconnect();
 
     void read() override;
 
@@ -53,7 +43,9 @@ public:
         std::size_t const size
     ) override;
 
-    IConnection::Action getStartAction() const;
+    void stop();
+
+    void disconnect();
 
     #ifdef SERVER_SSL
         ssl::stream< asio::ip::tcp::socket > & socket();
@@ -63,14 +55,18 @@ public:
 
 protected:
 
+    void dispatch(
+        sys::error_code const & errorCode,
+        IConnection::Action const action
+    );
+
+    void disconnectOnError(
+        sys::error_code const & errorCode
+    );
+
     void parse(
         sys::error_code const & errorCode,
         std::size_t const bytesTransferred
-    );
-
-    void restartAgain(
-        sys::error_code const & errorCode,
-        IConnection::Action const action
     );
 
 protected:
@@ -123,8 +119,9 @@ void Connection::start(
 )
 {
     #ifdef SERVER_SSL
-        auto const restart = boost::bind(
-            & Connection::restartAgain,
+
+        auto const dispatch = boost::bind(
+            & Connection::dispatch,
             Connection::shared_from_this(),
             placeholders::error,
             action
@@ -132,44 +129,12 @@ void Connection::start(
 
         m_socket.async_handshake(
             ssl::stream_base::server,
-            restart
+            dispatch
         );
+
     #else
-        restart( action );
+        dispatch( sys::error_code(), action );
     #endif
-}
-
-inline
-void Connection::restart(
-    IConnection::Action const action
-)
-{
-    switch( action )
-    {
-        case Action::Process:
-        {
-            process();
-            
-            break;
-        }
-
-        case Action::Read:
-        {
-            auto const parse = boost::bind(
-                & Connection::parse,
-                Connection::shared_from_this(),
-                placeholders::error,
-                placeholders::bytes_transferred()
-            );
-
-            m_socket.async_read_some(
-                asio::buffer( m_buffer, m_maxSize ),
-                parse
-            );
-
-            break;
-        }
-    }
 }
 
 inline
@@ -181,7 +146,7 @@ IConnection::Action Connection::getStartAction() const
 inline
 void Connection::read()
 {
-    restart( Action::Read );
+    dispatch( sys::error_code(), Action::Read );
 }
 
 inline
@@ -204,25 +169,50 @@ void Connection::parse(
     }
     else
     {
-        restart( m_task->parse( m_buffer, bytesTransferred ) );
+        dispatch( sys::error_code(), m_task->parse( m_buffer, bytesTransferred ) );
     }
 }
 
 inline
-void Connection::restartAgain(
+void Connection::dispatch(
     sys::error_code const & errorCode,
     IConnection::Action const action
 )
 {
     if( errorCode )
     {
-        std::cerr << "Restart Again Error: " << errorCode.message() << std::endl;
+        std::cerr << "dispatch Again Error: " << errorCode.message() << std::endl;
 
         disconnect();
     }
     else
     {
-        restart( action );
+        switch( action )
+        {
+            case Action::Process:
+            {
+                process();
+                
+                break;
+            }
+
+            case Action::Read:
+            {
+                auto const parse = boost::bind(
+                    & Connection::parse,
+                    Connection::shared_from_this(),
+                    placeholders::error,
+                    placeholders::bytes_transferred()
+                );
+
+                m_socket.async_read_some(
+                    asio::buffer( m_buffer, m_maxSize ),
+                    parse
+                );
+
+                break;
+            }
+        }
     }
 }
 
@@ -233,7 +223,7 @@ void Connection::response(
 )
 {
     auto const continuation = boost::bind(
-        & Connection::doNothing,
+        & Connection::disconnectOnError,
         Connection::shared_from_this(),
         placeholders::error
     );
@@ -246,13 +236,13 @@ void Connection::response(
 }
 
 inline
-void Connection::doNothing(
+void Connection::disconnectOnError(
     sys::error_code const & errorCode
 )
 {
     if( errorCode )
     {
-        std::cerr << "Do Nothing Error: " << errorCode.message() << std::endl;
+        std::cerr << "Disconnect On Error Error: " << errorCode.message() << std::endl;
 
         disconnect();
     }
