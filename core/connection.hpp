@@ -38,8 +38,6 @@ public:
 
     void stop();
 
-    void parseError();
-
     void process();
 
     void doNothing(
@@ -155,13 +153,6 @@ void Connection::restart(
             break;
         }
 
-        case Action::ReadError:
-        {
-            parseError();
-
-            break;
-        }
-
         case Action::Read:
         {
             auto const parse = boost::bind(
@@ -191,12 +182,6 @@ inline
 void Connection::read()
 {
     restart( Action::Read );
-}
-
-inline
-void Connection::parseError()
-{
-    m_task->parseError();
 }
 
 inline

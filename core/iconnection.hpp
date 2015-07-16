@@ -28,7 +28,6 @@ struct IConnection
     enum class Action
     {
         Read,
-        ReadError,
         Process
     };
 

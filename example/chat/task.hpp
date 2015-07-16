@@ -21,8 +21,6 @@ struct ChatTask
         std::size_t const bytesTransferred
     );
 
-    void parseError();
-
     void process();
 };
 
@@ -122,12 +120,6 @@ typename IConnection::Action ChatTask::parse(
     }
 
     return IConnection::Action::Process;
-}
-
-inline
-void ChatTask::parseError()
-{
-    std::cerr << "Parse error" << std::endl;
 }
 
 inline

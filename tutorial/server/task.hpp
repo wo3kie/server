@@ -42,19 +42,9 @@ public:
         // function will be called again with a new chunk of data.
         return IConnection::Action::Read;
 
-        // If you find incomong data incorrect return 'ReadError'. As a result
-        // 'parseError' function will be called next.
-        return IConnection::Action::ReadError;
-
         // If you have read all incoming data and everything is fine return
         // 'Process'. As a result 'process' function will be called next.
         return IConnection::Action::Process;
-    }
-
-    // This function is called everytime you have returned
-    // 'IConnection::Action::ReadError'.
-    void parseError()
-    {
     }
 
     // This function is called everytime you have returned 'IConnection::Action::Process'.

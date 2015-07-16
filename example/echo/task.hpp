@@ -22,8 +22,6 @@ struct EchoTask
         std::size_t const bytesTransferred
     );
 
-    void parseError();
-
     void process();
 };
 
@@ -43,12 +41,6 @@ typename IConnection::Action EchoTask::parse(
     m_connection->read();
 
     return IConnection::Action::Process;
-}
-
-inline
-void EchoTask::parseError()
-{
-    std::cerr << "Parse error" << std::endl;
 }
 
 inline

@@ -12,8 +12,6 @@ struct ITask
         std::size_t const bytesTransferred
     ) = 0;
 
-    virtual void parseError() = 0;
-
     virtual void process() = 0;
 
 public:

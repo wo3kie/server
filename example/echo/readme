@@ -25,7 +25,6 @@ Class diagram
      EchoServer                                           EchoTask
      createTask()                                         getStartAction()
                                                           parse()
-                                                          parseError()
                                                           process()
 
 
