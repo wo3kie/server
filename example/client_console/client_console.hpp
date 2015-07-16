@@ -53,7 +53,9 @@ private:
     {
         if( errorCode )
         {
-            std::cerr << "Request Write Error: " << errorCode.message() << std::endl;
+            std::cerr 
+                << "ClientConsole::onRequestWritten Error: "
+                << errorCode.message() << std::endl;
         }
     }
 
@@ -108,7 +110,9 @@ private:
     {
         if( errorCode )
         {
-            std::cerr << "Response Read Error: " << errorCode.message() << std::endl;
+            std::cerr
+                << "ClientConsole::onResponseRead Error: "
+                << errorCode.message() << std::endl;
         }
         else
         {

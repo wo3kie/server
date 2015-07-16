@@ -33,8 +33,6 @@ public:
         Action const action
     );
 
-    void process();
-
     void read() override;
 
     void response(
@@ -68,6 +66,8 @@ protected:
         sys::error_code const & errorCode,
         std::size_t const bytesTransferred
     );
+
+    void process();
 
 protected:
 
@@ -165,7 +165,7 @@ void Connection::parse(
 {
     if( errorCode )
     {
-        std::cerr << "Parse Error: " << errorCode.message() << std::endl;
+        std::cerr << "Connection::parse Error: " << errorCode.message() << std::endl;
 
         disconnect();
     }
@@ -183,7 +183,7 @@ void Connection::dispatch(
 {
     if( errorCode )
     {
-        std::cerr << "dispatch Again Error: " << errorCode.message() << std::endl;
+        std::cerr << "Connection::dispatch Error: " << errorCode.message() << std::endl;
 
         disconnect();
     }
@@ -252,7 +252,7 @@ void Connection::disconnectOnError(
 {
     if( errorCode )
     {
-        std::cerr << "Disconnect On Error Error: " << errorCode.message() << std::endl;
+        std::cerr << "Connection::disconnectOnError Error: " << errorCode.message() << std::endl;
 
         disconnect();
     }

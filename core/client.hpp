@@ -215,7 +215,7 @@ void Client< TReader, TWriter >::onResolved(
 {
     if( errorCode )
     {
-        std::cerr << "Resolution Error: " << errorCode.message() << std::endl;
+        std::cerr << "Client::onResolved Error: " << errorCode.message() << std::endl;
     }
     else
     {
@@ -251,7 +251,7 @@ void Client< TReader, TWriter >::onConnected(
 {
     if( errorCode )
     {
-        std::cerr << "Connection Error: " << errorCode.message() << std::endl;
+        std::cerr << "Client::onConnected Error: " << errorCode.message() << std::endl;
     }
     else
     {
@@ -285,7 +285,7 @@ void Client< TReader, TWriter >::onHandShake(
 {
     if( errorCode )
     {
-        std::cerr << "Handshake Error: " << errorCode.message() << std::endl;
+        std::cerr << "Client::onHandshake Error: " << errorCode.message() << std::endl;
     }
     else
     {
