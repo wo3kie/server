@@ -1,21 +1,17 @@
-## Copyright (C) 2015 Lukasz Czerwinski
+## Copyright (C) 2015 Łukasz Czerwiński
 
-## server
+## Server
 C++ boost::asio based async client/server
 
-## website
+## Website
 https://github.com/wo3kie/server
 
-## license
-For license please refer to LICENSE file.
-
-## requirements
+## Requirements
 C++11  
-g++ / clang++  
 boost  
 OpenSSL (optionally)
 
-## how to build it
+## How to build it?
 make  
 or  
 make SSL=1
