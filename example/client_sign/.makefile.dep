@@ -1,0 +1,2 @@
+client_sign.o: client_sign.cpp client_sign.hpp ../../core/client.hpp \
+  client_key.hpp

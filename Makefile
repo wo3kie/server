@@ -1,6 +1,6 @@
 include ./common.mk
 
-APPS=example/client_console example/chat example/echo
+APPS=example/client_console example/chat example/echo example/sign example/client_sign
 
 .PHONY: all
 all:
